@@ -1,0 +1,143 @@
+# ⚔️ pi-model-loadout-switcher
+
+A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent favorites system for [`pi-coding-agent`](https://github.com/badlogic/pi-mono). Instantly switch between local engines (Unsloth/GGUF on Apple Silicon) and cloud providers (OpenRouter, Anthropic, Google) without touching `/model`.
+
+```text
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ ⚔️  MODEL LOADOUT & FAST SWITCHER                                           │
+├─────────────────────────────────────────────────────────────────────────────┤
+│ Scope: [ Workspace (.pi/) ]   Active: Qwen3.8-27B-Instruct [unsloth]        │
+│                                                                             │
+│  EQUIPPED SLOTS (press 1, 2, or 3 to instant equip):                        │
+│  [1] Primary  : Qwen3.8-27B-Instruct     [unsloth]     (*) │ Local ~9 t/s ◂ active
+│  [2] Secondary: openrouter/free          [openrouter]  (*) │ FREE (Rank #1)│
+│  [3] Heavy    : deepseek-v4              [deepseek]    (*) │ $0.14/M in    │
+│                                                                             │
+│  STANDBY FAVORITES & CATALOG (↑/↓ to browse):                               │
+│    ❯ [4] Gemma-4-26B-A4B                 [unsloth]     (*) │ Local ~38 t/s │
+│      [5] gemini-2.5-flash                [google]      (*) │ $0.075/M in   │
+│      [6] claude-3-7-sonnet               [anthropic]       │ $3.00/M in    │
+│                                                                             │
+├─────────────────────────────────────────────────────────────────────────────┤
+│  [1-3] Instant Equip Slot    [Ctrl+1/2/3] Assign Highlighted to Slot        │
+│  [↑/↓] Select Standby        [Enter] Equip Selected                         │
+│  [Ctrl+F] Toggle Star (*)    [Esc] Cancel / Close                           │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+## Installation
+
+**Option A — drop into your global extensions directory (hot-reloadable):**
+
+```bash
+git clone <this-repo> ~/.pi/agent/extensions/pi-model-loadout-switcher
+# then in pi: /reload
+```
+
+**Option B — as a pi package via settings.json:**
+
+```json
+{
+  "packages": ["git:github.com/<you>/pi-model-loadout-switcher@v1"]
+}
+```
+
+**Option C — quick test:**
+
+```bash
+pi -e ./pi-model-loadout-switcher/src/index.ts
+```
+
+## Usage
+
+| Input | Action |
+|---|---|
+| `/loadout` or `/ml` | Open the Loadout HUD |
+| `/loadout 1` | Instant-equip Slot 1 without opening the HUD (also `2`, `3`) |
+| `Ctrl+M` | Open the Loadout HUD from anywhere |
+
+### Inside the HUD
+
+| Key | Action |
+|---|---|
+| `1` / `2` / `3` | Instant-equip Quick Slot 1/2/3, persist, and close |
+| `↑` / `↓` | Browse standby favorites & catalog |
+| `Enter` | Equip the highlighted standby model |
+| `Ctrl+1` / `Ctrl+2` / `Ctrl+3` | Assign highlighted model to that slot (auto-stars it) |
+| `Ctrl+F` | Toggle favorite — starred models show a gray `(*)` tag |
+| `Esc` | Close without changing anything |
+
+### Session restore
+
+On `session_start`, the extension re-applies your saved `activeModelId` (falling back to Slot 1) — zero manual setup after restart, `/new`, or `/resume`.
+
+## Configuration
+
+First match wins; writes go back to the file that was loaded.
+
+| Scope | Path |
+|---|---|
+| Workspace | `.pi/pi-model-loadout-switcher.json` (in the active repo) |
+| Global | `~/.pi/agent/pi-model-loadout-switcher.json` |
+
+```json
+{
+  "activeModelId": "unsloth/Qwen3.8-27B-Instruct-GGUF",
+  "slots": {
+    "1": "unsloth/Qwen3.8-27B-Instruct-GGUF",
+    "2": "openrouter/free",
+    "3": "deepseek/deepseek-v4"
+  },
+  "favorites": [
+    "unsloth/Qwen3.8-27B-Instruct-GGUF",
+    "openrouter/free",
+    "deepseek/deepseek-v4",
+    "unsloth/Gemma-4-26B-A4B-GGUF"
+  ],
+  "customCatalog": [
+    { "id": "unsloth/Qwen3.8-27B-Instruct-GGUF", "meta": "Local ~9 t/s" },
+    { "id": "openrouter/free", "meta": "FREE (Rank #1)" }
+  ],
+  "unslothBaseUrl": "http://127.0.0.1:8000"
+}
+```
+
+- All model refs are `"provider/modelId"` and must resolve in pi's model registry (`pi --list-models`) with auth configured.
+- `customCatalog[].meta` feeds the right-hand HUD column (cost, tok/s, notes).
+- Writes are atomic (tmp file + rename); corrupt files are treated as absent rather than crashing your session.
+
+## Local Unsloth health check
+
+If you equip an `unsloth/...` model and nothing answers on `http://127.0.0.1:8000/v1`, you'll get:
+
+> ⚠️ Local Unsloth server not detected on :8000. Run 'unsloth serve' or 'unsloth start pi'.
+
+The check is a 1.5s-timeout `GET /v1/models` and never blocks startup. If you don't use local models, it stays completely inert. Point it elsewhere with `unslothBaseUrl`.
+
+## Development
+
+```bash
+bun install          # dev deps (typescript, @types/*)
+bun test             # unit tests (config engine, slots, favorites)
+bun run typecheck    # strict tsc --noEmit
+```
+
+### Project layout
+
+```text
+src/
+├── index.ts           # Extension entrypoint: commands, shortcuts, session hooks
+├── types.ts           # Config schema + model-ref helpers
+├── config.ts          # Workspace/global resolution, atomic saves, mutations
+├── ui/
+│   ├── modal.ts       # Loadout HUD (ctx.ui.custom component + key handling)
+│   └── formatter.ts   # ANSI-aware padding, gray (*) tags, column layout
+└── unsloth/
+    └── health.ts      # localhost:8000/v1 health probe
+test/
+└── config.test.ts     # bun test suite
+```
+
+## License
+
+MIT
