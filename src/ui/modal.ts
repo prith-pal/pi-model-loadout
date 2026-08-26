@@ -93,7 +93,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 		let selected = 0;
 		let toast = opts.initialToast;
 		let query = "";
-		let searching = false;
+		let mode: "base" | "search" = "base";
 		const allStandby = buildStandby(opts);
 		let filtered = allStandby;
 		let finished = false;
@@ -146,8 +146,8 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			out.push(line());
 
 			// Search row (Ctrl+S)
-			const cursor = searching ? accent("▏") : "";
-			const searchHint = searching ? "" : dim("(Ctrl+S to filter)");
+			const cursor = mode === "search" ? accent("▏") : "";
+			const searchHint = mode === "search" ? "" : dim("(Ctrl+S to filter)");
 			out.push(line(` 🔍 ${query}${cursor} ${searchHint}`));
 			out.push(line());
 
@@ -203,7 +203,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			out.push(line());
 
 			out.push(border("├", "─", "┤"));
-			const hints = searching
+			const hints = mode === "search"
 				? [
 						" [Type] Filter standby list     [Esc] Clear filter / close when empty",
 						" [↑/↓] Move in filtered list   [Enter] Equip highlighted",
@@ -227,11 +227,11 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			invalidate() {},
 			handleInput(data: string): void {
 				// --- SEARCH MODE ------------------------------------------------
-				if (searching) {
+				if (mode === "search") {
 					if (matchesKey(data, "escape")) {
 						if (query) {
 							query = "";
-							searching = false;
+							mode = "base";
 							refilter();
 							tui.requestRender();
 						} else {
@@ -290,7 +290,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 				}
 
 				if (matchesKey(data, "ctrl+s")) {
-					searching = true;
+					mode = "search";
 					tui.requestRender();
 					return;
 				}
