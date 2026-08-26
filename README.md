@@ -65,8 +65,9 @@ pi -e ./pi-model-loadout-switcher/src/index.ts
 | `↑` / `↓` | Browse standby favorites & catalog |
 | `Enter` | Equip the highlighted standby model |
 | `Ctrl+1` / `Ctrl+2` / `Ctrl+3` | Assign highlighted model to that slot (auto-stars it) |
+| `Ctrl+S` | Enter search mode — keystrokes fuzzy-filter the standby list live |
 | `Ctrl+F` | Toggle favorite — starred models show a gray `(*)` tag |
-| `Esc` | Close without changing anything |
+| `Esc` | (search) clear filter / (normal) close without changing anything |
 
 ### Session restore
 

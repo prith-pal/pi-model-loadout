@@ -137,6 +137,35 @@ describe("equip & favorites", () => {
 	});
 });
 
+describe("fuzzy search", () => {
+	// mirror of modal.ts matcher — digits must match literally within queries
+	const fuzzyMatch = (query: string, text: string): boolean => {
+		const q = query.toLowerCase();
+		const t = text.toLowerCase();
+		let ti = 0;
+		for (const ch of q) {
+			const found = t.indexOf(ch, ti);
+			if (found === -1) return false;
+			ti = found + 1;
+		}
+		return true;
+	};
+
+	test("digits in query are literal, not slot keys", () => {
+		expect(fuzzyMatch("kimi-k3", "moonshot/kimi-k3")).toBe(true);
+		expect(fuzzyMatch("kimi-k3", "moonshot/kimi-k2")).toBe(false);
+	});
+
+	test("subsequence match across name/provider", () => {
+		expect(fuzzyMatch("dskv4", "deepseek/deepseek-v4")).toBe(true);
+		expect(fuzzyMatch("claude", "anthropic/claude-sonnet-4-5")).toBe(true);
+	});
+
+	test("case-insensitive", () => {
+		expect(fuzzyMatch("QWEN", "unsloth/qwen3-gguf")).toBe(true);
+	});
+});
+
 describe("model ref helpers", () => {
 	test("parseModelRef splits provider and id", () => {
 		expect(parseModelRef("openrouter/free")).toEqual({ provider: "openrouter", modelId: "free" });

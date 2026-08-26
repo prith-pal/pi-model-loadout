@@ -2,8 +2,11 @@
  * Interactive Loadout HUD — a video game–style equipment screen rendered via
  * ctx.ui.custom(). Pure keyboard-driven: no timers, no background I/O.
  *
- * Key handling is delegated through `matchesKey` from pi-tui so custom
- * keybindings and terminal escape sequences behave consistently.
+ * Two input modes:
+ *  - NORMAL: 1/2/3 equip, Ctrl+1/2/3 assign, Ctrl+F star, ↑↓ navigate, Enter equip, Esc close.
+ *  - SEARCH (Ctrl+S): keystrokes type into a filter box; the standby list
+ *    fuzzy-filters live. Esc clears the text and exits search; Esc on empty
+ *    text closes the HUD. ↑↓ move within the filtered list.
  */
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
@@ -18,8 +21,6 @@ export type HudResult =
 	| { action: "assign"; slot: "1" | "2" | "3"; ref: ModelRef }
 	| { action: "favorite"; ref: ModelRef; favorited: boolean }
 	| { action: "cancel" };
-
-export type HudAction = (result: HudResult) => void;
 
 type ListRow = {
 	ref: ModelRef;
@@ -67,19 +68,45 @@ const buildStandby = (opts: HudOptions): ListRow[] => {
 	return rows;
 };
 
+/** Fuzzy match: all query chars appear in order (subsequence), case-insensitive. */
+const fuzzyMatch = (query: string, text: string): boolean => {
+	const q = query.toLowerCase();
+	const t = text.toLowerCase();
+	let ti = 0;
+	for (const ch of q) {
+		const found = t.indexOf(ch, ti);
+		if (found === -1) return false;
+		ti = found + 1;
+	}
+	return true;
+};
+
+const applyFilter = (rows: ListRow[], query: string): ListRow[] => {
+	if (!query) return rows;
+	return rows.filter((r) => fuzzyMatch(query, `${r.ref} ${r.label} ${r.provider}`));
+};
+
 export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): Promise<HudResult> => {
 	if (ctx.mode !== "tui") return { action: "cancel" };
 
 	return ctx.ui.custom<HudResult>((tui, theme, _kb, done) => {
 		let selected = 0;
 		let toast = opts.initialToast;
-		let standby = buildStandby(opts);
+		let query = "";
+		let searching = false;
+		const allStandby = buildStandby(opts);
+		let filtered = allStandby;
 		let finished = false;
 
 		const finish = (result: HudResult): void => {
 			if (finished) return;
 			finished = true;
 			done(result);
+		};
+
+		const refilter = (): void => {
+			filtered = applyFilter(allStandby, query);
+			selected = Math.min(selected, Math.max(0, filtered.length - 1));
 		};
 
 		const dim = (s: string): string => theme.fg("dim", s);
@@ -92,6 +119,8 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			return vw >= w ? s : s + " ".repeat(w - vw);
 		};
 
+		const { config } = opts;
+
 		const render = (width: number): string[] => {
 			const inner = Math.min(79, Math.max(40, width - 4));
 			const line = (content = ""): string => {
@@ -101,7 +130,6 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			};
 			const border = (l: string, m: string, r: string): string => dim(`${l}${m.repeat(inner)}${r}`);
 
-			const { config } = opts;
 			const active = opts.activeModelId ?? config.activeModelId;
 			const out: string[] = [];
 
@@ -115,6 +143,12 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					}`,
 				),
 			);
+			out.push(line());
+
+			// Search row (Ctrl+S)
+			const cursor = searching ? accent("▏") : "";
+			const searchHint = searching ? "" : dim("(Ctrl+S to filter)");
+			out.push(line(` 🔍 ${query}${cursor} ${searchHint}`));
 			out.push(line());
 
 			out.push(line(` ${theme.bold("EQUIPPED SLOTS")} ${muted("(press 1, 2, or 3 to instant equip):")}`));
@@ -138,13 +172,19 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			}
 			out.push(line());
 
-			out.push(line(` ${theme.bold("STANDBY FAVORITES & CATALOG")} ${muted("(↑/↓ to browse):")}`));
-			if (standby.length === 0) {
-				out.push(line(`   ${dim("(no standby models — favorite one with Ctrl+F from /model)")}`));
+			out.push(
+				line(
+					` ${theme.bold("STANDBY FAVORITES & CATALOG")} ${muted("(↑/↓ to browse):")}${
+						query ? ` ${muted(`filtered by "${query}" (${filtered.length}/${allStandby.length})`)}` : ""
+					}`,
+				),
+			);
+			if (filtered.length === 0) {
+				out.push(line(`   ${dim(allStandby.length === 0 ? "(no standby models)" : `(no matches for "${query}")`)}`));
 			}
 			const MAX_ROWS = 8;
-			const start = Math.max(0, Math.min(selected - 3, standby.length - MAX_ROWS));
-			const window = standby.slice(start, start + MAX_ROWS);
+			const start = Math.max(0, Math.min(selected - 3, filtered.length - MAX_ROWS));
+			const window = filtered.slice(start, start + MAX_ROWS);
 			window.forEach((row, i) => {
 				const idx = start + i;
 				const isSel = idx === selected;
@@ -157,15 +197,24 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 				)} ${fav}${row.meta ? ` ${dim("│")} ${muted(row.meta)}` : ""}${slotBadge ? ` ${slotBadge}` : ""}`;
 				out.push(line(`   ${isSel ? accent(`❯ ${num} `) : dim(`  ${num} `)}${isSel ? accent(body) : body}`));
 			});
-			if (standby.length > MAX_ROWS) {
-				out.push(line(`   ${dim(`… ${standby.length - MAX_ROWS} more (↑/↓ to scroll)`)}`));
+			if (filtered.length > MAX_ROWS) {
+				out.push(line(`   ${dim(`… ${filtered.length - MAX_ROWS} more (↑/↓ to scroll)`)}`));
 			}
 			out.push(line());
 
 			out.push(border("├", "─", "┤"));
-			out.push(line(` ${muted("[1-3] Instant Equip Slot    [Ctrl+1/2/3] Assign Highlighted to Slot")}`));
-			out.push(line(` ${muted("[↑/↓] Select Standby        [Enter] Equip Selected")}`));
-			out.push(line(` ${muted("[Ctrl+F] Toggle Star (*)    [Esc] Cancel / Close")}`));
+			const hints = searching
+				? [
+						" [Type] Filter standby list     [Esc] Clear filter / close when empty",
+						" [↑/↓] Move in filtered list   [Enter] Equip highlighted",
+						" [Ctrl+1/2/3] Assign           [Ctrl+F] Toggle Star (*)",
+					]
+				: [
+						" [1-3] Instant Equip Slot    [Ctrl+1/2/3] Assign Highlighted to Slot",
+						" [↑/↓] Select Standby        [Enter] Equip Selected",
+						" [Ctrl+S] Filter             [Ctrl+F] Toggle Star (*)    [Esc] Close",
+					];
+			for (const h of hints) out.push(line(muted(h)));
 			if (toast) {
 				out.push(line(` ${theme.fg("success", `✔ ${toast}`)}`));
 			}
@@ -177,14 +226,77 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			render,
 			invalidate() {},
 			handleInput(data: string): void {
+				// --- SEARCH MODE ------------------------------------------------
+				if (searching) {
+					if (matchesKey(data, "escape")) {
+						if (query) {
+							query = "";
+							searching = false;
+							refilter();
+							tui.requestRender();
+						} else {
+							finish({ action: "cancel" });
+						}
+						return;
+					}
+					if (matchesKey(data, "backspace")) {
+						query = query.slice(0, -1);
+						refilter();
+						tui.requestRender();
+						return;
+					}
+					if (matchesKey(data, "up")) {
+						selected = Math.max(0, selected - 1);
+						tui.requestRender();
+						return;
+					}
+					if (matchesKey(data, "down")) {
+						selected = Math.min(Math.max(0, filtered.length - 1), selected + 1);
+						tui.requestRender();
+						return;
+					}
+					if (matchesKey(data, "enter")) {
+						const row = filtered[selected];
+						if (row) finish({ action: "equip", ref: row.ref });
+						return;
+					}
+					for (const key of SLOT_KEYS) {
+						if (matchesKey(data, `ctrl+${key}`)) {
+							const row = filtered[selected];
+							if (row) finish({ action: "assign", slot: key, ref: row.ref });
+							return;
+						}
+					}
+					if (matchesKey(data, "ctrl+f")) {
+						const row = filtered[selected];
+						if (row) {
+							finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref) });
+						}
+						return;
+					}
+					// Printable character → append to filter
+					if (data.length === 1 && !matchesKey(data, "ctrl+s")) {
+						query += data;
+						refilter();
+						tui.requestRender();
+					}
+					return;
+				}
+
+				// --- NORMAL MODE -------------------------------------------------
 				if (matchesKey(data, "escape")) {
 					finish({ action: "cancel" });
 					return;
 				}
 
-				// Instant equip slots 1–3
+				if (matchesKey(data, "ctrl+s")) {
+					searching = true;
+					tui.requestRender();
+					return;
+				}
+
 				if (SLOT_KEYS.includes(data as "1" | "2" | "3")) {
-					const ref = opts.config.slots[data as "1" | "2" | "3"];
+					const ref = config.slots[data as "1" | "2" | "3"];
 					if (ref) {
 						finish({ action: "equip", ref });
 					} else {
@@ -194,19 +306,18 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					return;
 				}
 
-				// Assign highlighted → slot (Ctrl+1/2/3)
 				for (const key of SLOT_KEYS) {
 					if (matchesKey(data, `ctrl+${key}`)) {
-						const row = standby[selected];
+						const row = filtered[selected];
 						if (row) finish({ action: "assign", slot: key, ref: row.ref });
 						return;
 					}
 				}
 
 				if (matchesKey(data, "ctrl+f")) {
-					const row = standby[selected];
+					const row = filtered[selected];
 					if (row) {
-						finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(opts.config, row.ref) });
+						finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref) });
 					}
 					return;
 				}
@@ -218,14 +329,14 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					return;
 				}
 				if (matchesKey(data, "down")) {
-					selected = Math.min(Math.max(0, standby.length - 1), selected + 1);
+					selected = Math.min(Math.max(0, filtered.length - 1), selected + 1);
 					toast = undefined;
 					tui.requestRender();
 					return;
 				}
 
 				if (matchesKey(data, "enter")) {
-					const row = standby[selected];
+					const row = filtered[selected];
 					if (row) finish({ action: "equip", ref: row.ref });
 					return;
 				}
