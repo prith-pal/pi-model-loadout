@@ -17,6 +17,7 @@ import {
 	isFavorite,
 	resolveConfig,
 	saveConfig,
+	slotOf,
 	toggleFavorite,
 } from "./config.js";
 import { type ModelRef, type ResolvedConfig, parseModelRef } from "./types.js";
@@ -161,6 +162,39 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 		handler: async (args, ctx) => {
 			if (!resolved) resolved = resolveConfig(ctx.cwd);
 			await openHud(ctx);
+		},
+	});
+
+	// `/model <query>` extends the native picker: bare `/model` still opens pi's
+	// built-in selector (invoked via prompt), but with an argument we resolve
+	// against favorites/slots/catalog and equip directly — with completions.
+	pi.registerCommand("model", {
+		description: "Switch model (loadout favorites) — bare /model opens pi's picker",
+		getArgumentCompletions: (prefix) => {
+			if (!resolved) return null;
+			const cfg = resolved.config;
+			const refs = new Set<string>([
+				...Object.values(cfg.slots).filter((v): v is string => !!v),
+				...cfg.favorites,
+				...cfg.customCatalog.map((e) => e.id),
+			]);
+			const slotBadge = (ref: string): string => {
+				const slot = slotOf(cfg, ref);
+				if (slot) return `⚡ slot ${slot}`;
+				return isFavorite(cfg, ref) ? "(*) favorite" : "catalog";
+			};
+			const items = [...refs].map((ref) => ({ value: ref, label: ref, description: slotBadge(ref) }));
+			const filtered = items.filter((i) => i.value.includes(prefix));
+			return filtered.length > 0 ? filtered : null;
+		},
+		handler: async (args, ctx) => {
+			if (!resolved) resolved = resolveConfig(ctx.cwd);
+			const query = args?.trim();
+			if (!query) {
+				await openHud(ctx); // bare /model → our HUD instead of nothing
+				return;
+			}
+			await equipRef(ctx, query);
 		},
 	});
 
