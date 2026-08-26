@@ -54,7 +54,7 @@ pi -e ./pi-model-loadout-switcher/src/index.ts
 |---|---|
 | `/loadout` or `/ml` | Open the Loadout HUD |
 | `/loadout 1` | Instant-equip Slot 1 without opening the HUD (also `2`, `3`) |
-| `Ctrl+M` | Open the Loadout HUD from anywhere |
+| `Ctrl+Shift+L` | Open the Loadout HUD from anywhere |
 
 ### Inside the HUD
 

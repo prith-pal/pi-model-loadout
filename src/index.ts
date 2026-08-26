@@ -11,7 +11,6 @@
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";
-import { Key } from "@earendil-works/pi-tui";
 import {
 	assignSlot,
 	equip,
@@ -165,9 +164,8 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 		},
 	});
 
-	// --- Shortcuts ------------------------------------------------------------
-
-	pi.registerShortcut(Key.ctrl("m"), {
+	// --- Shortcut: ctrl+shift+l (L = Loadout) ----------------------------------
+	pi.registerShortcut("ctrl+shift+l", {
 		description: "Open the Model Loadout HUD",
 		handler: async (ctx) => {
 			if (!resolved) resolved = resolveConfig(ctx.cwd);
