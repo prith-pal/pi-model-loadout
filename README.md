@@ -9,14 +9,14 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 │ Scope: [ Workspace (.pi/) ]   Active: Qwen3.8-27B-Instruct [unsloth]        │
 │                                                                             │
 │  EQUIPPED SLOTS (press 1, 2, or 3 to instant equip):                        │
-│  [1] Primary  : Qwen3.8-27B-Instruct     [unsloth]     (*) │ Local ~9 t/s ◂ active
-│  [2] Secondary: openrouter/free          [openrouter]  (*) │ FREE (Rank #1)│
-│  [3] Heavy    : deepseek-v4              [deepseek]    (*) │ $0.14/M in    │
+│  [1] Primary  : Qwen3.8-27B-Instruct     [unsloth]     (*)  ◂ active       │
+│  [2] Secondary: openrouter/free          [openrouter]  (*)                 │
+│  [3] Heavy    : deepseek-v4              [deepseek]    (*)                 │
 │                                                                             │
 │  STANDBY FAVORITES & CATALOG (↑/↓ to browse):                               │
-│    ❯ [4] Gemma-4-26B-A4B                 [unsloth]     (*) │ Local ~38 t/s │
-│      [5] gemini-2.5-flash                [google]      (*) │ $0.075/M in   │
-│      [6] claude-3-7-sonnet               [anthropic]       │ $3.00/M in    │
+│    ❯ [4] Gemma-4-26B-A4B                 [unsloth]     (*)                 │
+│      [5] gemini-2.5-flash                [google]      (*)                 │
+│      [6] claude-3-7-sonnet               [anthropic]                       │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  [1-3] Instant Equip Slot    [Ctrl+1/2/3] Assign Highlighted to Slot        │
@@ -95,15 +95,14 @@ First match wins; writes go back to the file that was loaded.
     "unsloth/Gemma-4-26B-A4B-GGUF"
   ],
   "customCatalog": [
-    { "id": "unsloth/Qwen3.8-27B-Instruct-GGUF", "meta": "Local ~9 t/s" },
-    { "id": "openrouter/free", "meta": "FREE (Rank #1)" }
+    { "id": "unsloth/Qwen3.8-27B-Instruct-GGUF", "label": "Qwen 27B (local)" }
   ],
   "unslothBaseUrl": "http://127.0.0.1:8000"
 }
 ```
 
 - All model refs are `"provider/modelId"` and must resolve in pi's model registry (`pi --list-models`) with auth configured.
-- `customCatalog[].meta` feeds the right-hand HUD column (cost, tok/s, notes).
+- `customCatalog[].label` overrides the display name; `customCatalog[].meta` is an optional free-form annotation shown in the right-hand HUD column. Pi's registry doesn't expose cost or tokens-per-second, so nothing is shown unless you write it yourself.
 - Writes are atomic (tmp file + rename); corrupt files are treated as absent rather than crashing your session.
 
 ## Local Unsloth health check

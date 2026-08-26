@@ -25,7 +25,8 @@ export type CatalogEntry = {
 	id: ModelRef;
 	/** Human label shown in the HUD instead of the raw id. */
 	label?: string;
-	/** Right-column metadata shown in the HUD, e.g. "Local ~38 t/s" or "$0.14/M in". */
+	/** Optional free-form annotation for the HUD's right column (e.g. your own notes).
+	 *  Pi's registry exposes no cost/speed data, so this is only what you write yourself. */
 	meta?: string;
 };
 
