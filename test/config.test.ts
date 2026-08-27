@@ -47,7 +47,7 @@ const sampleConfig = (): LoadoutConfig => ({
 
 describe("persistence", () => {
 	test("saveConfig writes atomically and round-trips", () => {
-		const path = join(workDir, ".pi", "pi-model-loadout-switcher.json");
+		const path = join(workDir, ".pi", "pi-model-loadout.json");
 		const resolved = { config: sampleConfig(), scope: "workspace" as const, path };
 		saveConfig(resolved);
 
@@ -57,13 +57,13 @@ describe("persistence", () => {
 	});
 
 	test("saveConfig creates parent directories", () => {
-		const path = join(workDir, "deep", "nested", "pi-model-loadout-switcher.json");
+		const path = join(workDir, "deep", "nested", "pi-model-loadout.json");
 		saveConfig({ config: defaultConfig(), scope: "global", path });
 		expect(existsSync(path)).toBe(true);
 	});
 
 	test("saveConfig overwrites existing file without leaving tmp files", () => {
-		const path = join(workDir, "pi-model-loadout-switcher.json");
+		const path = join(workDir, "pi-model-loadout.json");
 		saveConfig({ config: sampleConfig(), scope: "global", path });
 		const next = { ...sampleConfig(), activeModelId: "openrouter/free" };
 		saveConfig({ config: next, scope: "global", path });
@@ -190,8 +190,8 @@ describe("workspace file resolution", () => {
 	test("workspace file at expected path is readable", () => {
 		const dir = join(workDir, ".pi");
 		mkdirSync(dir, { recursive: true });
-		writeFileSync(join(dir, "pi-model-loadout-switcher.json"), JSON.stringify(sampleConfig()));
-		const loaded = normalizeConfig(JSON.parse(readFileSync(join(dir, "pi-model-loadout-switcher.json"), "utf-8")));
+		writeFileSync(join(dir, "pi-model-loadout.json"), JSON.stringify(sampleConfig()));
+		const loaded = normalizeConfig(JSON.parse(readFileSync(join(dir, "pi-model-loadout.json"), "utf-8")));
 		expect(loaded.slots["1"]).toBe("unsloth/Qwen3.8-27B-Instruct-GGUF");
 	});
 });

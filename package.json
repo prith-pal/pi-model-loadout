@@ -1,5 +1,5 @@
 {
-  "name": "pi-model-loadout-switcher",
+  "name": "pi-model-loadout",
   "version": "1.0.0",
   "description": "Video game–style weapon loadout (Quick Slots 1/2/3) and favorites for instant model switching in pi-coding-agent — local Unsloth/GGUF and cloud providers.",
   "type": "module",

@@ -1,13 +1,13 @@
 /**
- * pi-model-loadout-switcher
+ * pi-model-loadout
  *
  * Video game–style weapon loadout for pi models: Quick Slots 1/2/3, persistent
  * favorites, and instant switching between local engines (Unsloth/GGUF) and
  * cloud providers (OpenRouter, Anthropic, Google).
  *
  * Storage (first match wins):
- *   - Workspace: <cwd>/<CONFIG_DIR_NAME>/pi-model-loadout-switcher.json
- *   - Global:    ~/.pi/agent/pi-model-loadout-switcher.json
+ *   - Workspace: <cwd>/<CONFIG_DIR_NAME>/pi-model-loadout.json
+ *   - Global:    ~/.pi/agent/pi-model-loadout.json
  */
 
 import type { ExtensionAPI, ExtensionContext } from "@earendil-works/pi-coding-agent";

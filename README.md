@@ -1,4 +1,4 @@
-# ⚔️ pi-model-loadout-switcher
+# ⚔️ pi-model-loadout
 
 A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent favorites system for [`pi-coding-agent`](https://github.com/badlogic/pi-mono). Instantly switch between local engines (Unsloth/GGUF on Apple Silicon) and cloud providers (OpenRouter, Anthropic, Google) without touching `/model`.
 
@@ -30,7 +30,7 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 **Option A — drop into your global extensions directory (hot-reloadable):**
 
 ```bash
-git clone <this-repo> ~/.pi/agent/extensions/pi-model-loadout-switcher
+git clone <this-repo> ~/.pi/agent/extensions/pi-model-loadout
 # then in pi: /reload
 ```
 
@@ -38,14 +38,14 @@ git clone <this-repo> ~/.pi/agent/extensions/pi-model-loadout-switcher
 
 ```json
 {
-  "packages": ["git:github.com/<you>/pi-model-loadout-switcher@v1"]
+  "packages": ["git:github.com/<you>/pi-model-loadout@v1"]
 }
 ```
 
 **Option C — quick test:**
 
 ```bash
-pi -e ./pi-model-loadout-switcher/src/index.ts
+pi -e ./pi-model-loadout/src/index.ts
 ```
 
 ## Usage
@@ -89,8 +89,8 @@ First match wins; writes go back to the file that was loaded.
 
 | Scope | Path |
 |---|---|
-| Workspace | `.pi/pi-model-loadout-switcher.json` (in the active repo) |
-| Global | `~/.pi/agent/pi-model-loadout-switcher.json` |
+| Workspace | `.pi/pi-model-loadout.json` (in the active repo) |
+| Global | `~/.pi/agent/pi-model-loadout.json` |
 
 ```json
 {
@@ -142,7 +142,7 @@ src/
 ├── config.ts          # Workspace/global resolution, atomic saves, mutations
 ├── ui/
 │   ├── modal.ts       # Loadout HUD (ctx.ui.custom component + key handling)
-│   └── formatter.ts   # ANSI-aware padding, gray (*) tags, column layout
+│   └── modal.ts       # The entire Loadout HUD (one file now)
 └── unsloth/
     └── health.ts      # localhost:8000/v1 health probe
 test/

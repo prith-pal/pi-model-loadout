@@ -1,5 +1,5 @@
 /**
- * Type definitions for pi-model-loadout-switcher.
+ * Type definitions for pi-model-loadout.
  */
 
 /** Canonical model reference: "provider/modelId" (e.g. "anthropic/claude-sonnet-4-5"). */

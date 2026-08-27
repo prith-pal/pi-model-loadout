@@ -1,9 +1,9 @@
 /**
- * Multi-tier config engine for pi-model-loadout-switcher.
+ * Multi-tier config engine for pi-model-loadout.
  *
  * Resolution order:
- *   1. Workspace scope: <cwd>/<CONFIG_DIR_NAME>/pi-model-loadout-switcher.json
- *   2. Global scope:    <agentDir>/pi-model-loadout-switcher.json
+ *   1. Workspace scope: <cwd>/<CONFIG_DIR_NAME>/pi-model-loadout.json
+ *   2. Global scope:    <agentDir>/pi-model-loadout.json
  *   3. Fresh defaults (written to the global file on first mutation)
  *
  * Reads are validated defensively (unknown/garbage fields are dropped).
@@ -24,7 +24,7 @@ import {
 	defaultConfig,
 } from "./types.js";
 
-export const CONFIG_FILE_NAME = "pi-model-loadout-switcher.json";
+export const CONFIG_FILE_NAME = "pi-model-loadout.json";
 
 export const workspaceConfigPath = (cwd: string): string => join(cwd, CONFIG_DIR_NAME, CONFIG_FILE_NAME);
 
