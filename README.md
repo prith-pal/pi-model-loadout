@@ -59,6 +59,12 @@ pi -e ./pi-model-loadout-switcher/src/index.ts
 
 ### Inside the HUD
 
+> **macOS terminal caveat:** this HUD uses `Alt+1/2/3` and `Alt+F`. On macOS,
+> Option produces special characters (`¡`, `™`) unless your terminal maps
+> Option to Meta. Enable "Option as Meta" / "Option as ESC+" in iTerm2,
+> WezTerm, Ghostty, or cmux so Alt chords transmit cleanly.
+
+
 | Key | Action |
 |---|---|
 | `1` / `2` / `3` | Instant-equip Quick Slot 1/2/3, persist, and close |
