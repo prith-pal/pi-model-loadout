@@ -103,7 +103,11 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 		return rows;
 	};
 
-	/** Open the HUD loop; actions that mutate state re-open with a toast. */
+	/**
+	 * Open the HUD. Equip closes it; assign/favorite mutate in-place via the
+	 * built-in `mutate` callback so the filter query is never cleared and the
+	 * component stays mounted.
+	 */
 	const openHud = async (ctx: ExtensionContext, toast?: string, query?: string): Promise<void> => {
 		if (!resolved) resolved = resolveConfig(ctx.cwd);
 		const result: HudResult = await showLoadoutHud(ctx, {
@@ -113,30 +117,21 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 			catalog: catalogRows(ctx),
 			initialToast: toast,
 			initialQuery: query,
+			mutate: (action) => {
+				if (!resolved) return "";
+				if (action.kind === "assign") {
+					assignSlot(resolved.config, action.slot, action.ref);
+					persist();
+					return `Assigned ${action.ref} → Slot ${action.slot}`;
+				}
+				const nowFav = toggleFavorite(resolved.config, action.ref);
+				persist();
+				return nowFav ? `Starred ${action.ref} (*)` : `Unstarred ${action.ref}`;
+			},
 		});
 
-		switch (result.action) {
-			case "cancel":
-				return;
-			case "equip":
-				await equipRef(ctx, result.ref);
-				return;
-			case "assign": {
-				assignSlot(resolved.config, result.slot, result.ref);
-				persist();
-				await openHud(ctx, `Assigned ${result.ref} → Slot ${result.slot}`, result.query ?? undefined);
-				return;
-			}
-			case "favorite": {
-				const nowFav = toggleFavorite(resolved.config, result.ref);
-				persist();
-				await openHud(
-					ctx,
-					nowFav ? `Starred ${result.ref} (*)` : `Unstarred ${result.ref}`,
-					result.query ?? undefined,
-				);
-				return;
-			}
+		if (result.action === "equip") {
+			await equipRef(ctx, result.ref);
 		}
 	};
 

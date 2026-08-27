@@ -3,10 +3,14 @@
  * ctx.ui.custom(). Pure keyboard-driven: no timers, no background I/O.
  *
  * Two input modes:
- *  - NORMAL: 1/2/3 equip, Ctrl+Shift+1/2/3 assign, Ctrl+Shift+F star, ↑↓ navigate, Enter equip, Esc close.
+ *  - BASE:   1/2/3 equip; Ctrl+Shift+1/2/3 assign; Ctrl+Shift+F star;
+ *            ↑↓ navigate; Enter equip; Esc close.
  *  - SEARCH (Ctrl+S): keystrokes type into a filter box; the standby list
- *    fuzzy-filters live. Esc clears the text and exits search; Esc on empty
- *    text closes the HUD. ↑↓ move within the filtered list.
+ *    fuzzy-filters live. Assign/favorite mutations stay inside the HUD —
+ *    no re-open, so the query never clears on mutation.
+ *
+ * The filtered list is always a pure derivation `allStandby.filter(query)`;
+ * state mutations only touch the config, then re-render.
  */
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
@@ -15,12 +19,19 @@ import { isFavorite, scopeLabel, slotOf } from "../config.js";
 import { type LoadoutConfig, type ModelRef, SLOT_KEYS, SLOT_LABELS, parseModelRef, shortName } from "../types.js";
 import { truncate } from "./formatter.js";
 
-/** Result of a HUD session. */
+/** Result of a HUD session — only emitted when the HUD actually closes. */
 export type HudResult =
 	| { action: "equip"; ref: ModelRef }
 	| { action: "assign"; slot: "1" | "2" | "3"; ref: ModelRef; query: string }
 	| { action: "favorite"; ref: ModelRef; favorited: boolean; query: string }
 	| { action: "cancel" };
+
+/** Inline HUD state-mutation callback (assign/favorite without closing). */
+export type HudMutator = (
+	action:
+		| { kind: "assign"; slot: "1" | "2" | "3"; ref: ModelRef }
+		| { kind: "favorite"; ref: ModelRef; favorited: boolean },
+) => string /* toast message */;
 
 type ListRow = {
 	ref: ModelRef;
@@ -33,12 +44,14 @@ type HudOptions = {
 	config: LoadoutConfig;
 	scope: "workspace" | "global";
 	activeModelId?: string;
-	/** Extra catalog rows (registry models not already in slots/favorites). */
+	/** Extra catalog rows (registry models not already in favorites/slots). */
 	catalog: ListRow[];
-	/** Inline toast (e.g. "Assigned to slot 2") shown on re-render. */
+	/** Inline toast (e.g. "Assigned to slot 2") shown on open. */
 	initialToast?: string;
-	/** Filter query to preserve when a mutation re-opens the HUD. */
+	/** Filter query to preserve when re-opening (no longer used for closure). */
 	initialQuery?: string;
+	/** Mutator that applies a config change in-place + persists. */
+	mutate: HudMutator;
 };
 
 const NAME_W = 36;
@@ -51,7 +64,7 @@ const labelFor = (config: LoadoutConfig, ref: ModelRef): string =>
 	config.customCatalog.find((e) => e.id === ref)?.label ?? shortName(ref);
 
 /** Build the standby list: favorites first, then remaining catalog. */
-const buildStandby = (opts: HudOptions): ListRow[] => {
+const buildStandby = (opts: { config: LoadoutConfig; catalog: ListRow[] }): ListRow[] => {
 	const { config, catalog } = opts;
 	const slotted = new Set(SLOT_KEYS.map((k) => config.slots[k]).filter(Boolean) as string[]);
 	const rows: ListRow[] = [];
@@ -71,7 +84,7 @@ const buildStandby = (opts: HudOptions): ListRow[] => {
 };
 
 /** Fuzzy match: all query chars appear in order (subsequence), case-insensitive. */
-const fuzzyMatch = (query: string, text: string): boolean => {
+export const fuzzyMatch = (query: string, text: string): boolean => {
 	const q = query.toLowerCase();
 	const t = text.toLowerCase();
 	let ti = 0;
@@ -91,13 +104,16 @@ const applyFilter = (rows: ListRow[], query: string): ListRow[] => {
 export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): Promise<HudResult> => {
 	if (ctx.mode !== "tui") return { action: "cancel" };
 
+	// Standby list is derived once per render from opts (config + catalog live
+	// in the parent scope; mutations create a new opts object via re-render).
+	let standby: ListRow[] = buildStandby(opts);
+
 	return ctx.ui.custom<HudResult>((tui, theme, _kb, done) => {
 		let selected = 0;
 		let toast = opts.initialToast;
 		let query = opts.initialQuery ?? "";
 		let mode: "base" | "search" = opts.initialQuery ? "search" : "base";
-		const allStandby = buildStandby(opts);
-		let filtered = allStandby;
+		let filtered = applyFilter(standby, query);
 		let finished = false;
 
 		const finish = (result: HudResult): void => {
@@ -106,9 +122,12 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			done(result);
 		};
 
-		const refilter = (): void => {
-			filtered = applyFilter(allStandby, query);
+		const rebuild = (): void => {
+			// Rebuild standby after config mutation while preserving query/selected.
+			standby = buildStandby(opts);
+			filtered = applyFilter(standby, query);
 			selected = Math.min(selected, Math.max(0, filtered.length - 1));
+			tui.requestRender();
 		};
 
 		const dim = (s: string): string => theme.fg("dim", s);
@@ -147,7 +166,6 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			);
 			out.push(line());
 
-			// Search row (Ctrl+S)
 			const cursor = mode === "search" ? accent("▏") : "";
 			const searchHint = mode === "search" ? "" : dim("(Ctrl+S to filter)");
 			out.push(line(` 🔍 ${query}${cursor} ${searchHint}`));
@@ -169,7 +187,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 						),
 					);
 				} else {
-					out.push(line(`  ${dim(`[${key}]`)} ${padCell(label, 10)} ${dim("(empty — Ctrl+Shift+" + key + " on a standby row to assign)")}`));
+					out.push(line(`  ${dim(`[${key}]`)} ${padCell(label, 10)} ${dim("(empty — Ctrl+Shift+" + key + " to assign)")}`));
 				}
 			}
 			out.push(line());
@@ -177,12 +195,12 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			out.push(
 				line(
 					` ${theme.bold("STANDBY FAVORITES & CATALOG")} ${muted("(↑/↓ to browse):")}${
-						query ? ` ${muted(`filtered by "${query}" (${filtered.length}/${allStandby.length})`)}` : ""
+						query ? ` ${muted(`filtered by "${query}" (${filtered.length}/${standby.length})`)}` : ""
 					}`,
 				),
 			);
 			if (filtered.length === 0) {
-				out.push(line(`   ${dim(allStandby.length === 0 ? "(no standby models)" : `(no matches for "${query}")`)}`));
+				out.push(line(`   ${dim(standby.length === 0 ? "(no standby models)" : `(no matches for "${query}")`)}`));
 			}
 			const MAX_ROWS = 8;
 			const start = Math.max(0, Math.min(selected - 3, filtered.length - MAX_ROWS));
@@ -205,17 +223,18 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 			out.push(line());
 
 			out.push(border("├", "─", "┤"));
-			const hints = mode === "search"
-				? [
-						" [Type] Filter standby list     [Esc] Clear filter / close when empty",
-						" [↑/↓] Move in filtered list   [Enter] Equip highlighted",
-						" [Ctrl+Shift+1/2/3] Assign           [Ctrl+Shift+F] Toggle Star (*)",
-					]
-				: [
-						" [1-3] Instant Equip Slot    [Ctrl+Shift+1/2/3] Assign Highlighted to Slot",
-						" [↑/↓] Select Standby        [Enter] Equip Selected",
-						" [Ctrl+S] Filter             [Ctrl+Shift+F] Toggle Star (*)    [Esc] Close",
-					];
+			const hints =
+				mode === "search"
+					? [
+							" [Type] Filter standby list     [Esc] Clear filter / close when empty",
+							" [↑/↓] Move in filtered list   [Enter] Equip highlighted",
+							" [Ctrl+Shift+1/2/3] Assign    [Ctrl+Shift+F] Toggle Star (*)",
+						]
+					: [
+							" [1-3] Instant Equip Slot    [Ctrl+Shift+1/2/3] Assign Highlighted to Slot",
+							" [↑/↓] Select Standby        [Enter] Equip Selected",
+							" [Ctrl+S] Filter             [Ctrl+Shift+F] Toggle Star (*)    [Esc] Close",
+						];
 			for (const h of hints) out.push(line(muted(h)));
 			if (toast) {
 				out.push(line(` ${theme.fg("success", `✔ ${toast}`)}`));
@@ -234,7 +253,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 						if (query) {
 							query = "";
 							mode = "base";
-							refilter();
+							filtered = applyFilter(standby, query);
 							tui.requestRender();
 						} else {
 							finish({ action: "cancel" });
@@ -243,7 +262,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					}
 					if (matchesKey(data, "backspace")) {
 						query = query.slice(0, -1);
-						refilter();
+						filtered = applyFilter(standby, query);
 						tui.requestRender();
 						return;
 					}
@@ -265,29 +284,32 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					for (const key of SLOT_KEYS) {
 						if (matchesKey(data, `ctrl+shift+${key}`)) {
 							const row = filtered[selected];
-							if (row) finish({ action: "assign", slot: key, ref: row.ref, query });
+							if (row) {
+								toast = opts.mutate({ kind: "assign", slot: key, ref: row.ref });
+								rebuild();
+							}
 							return;
 						}
 					}
-					// Ctrl+Shift+f (or plain "F" fallback for legacy terminals)
-				if (matchesKey(data, "ctrl+shift+f") || data === "F") {
+					if (matchesKey(data, "ctrl+shift+f")) {
 						const row = filtered[selected];
 						if (row) {
-							finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref), query });
+							toast = opts.mutate({ kind: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref) });
+							rebuild();
 						}
 						return;
 					}
-				// Printable character → append to filter (digits included —
-				// in search mode, '3' narrows the query, it does not assign).
-				if (data.length === 1 && !matchesKey(data, "ctrl+s")) {
-					query += data;
-					refilter();
-					tui.requestRender();
-				}
+					// Printable character → append to filter (digits included —
+					// in search mode, '3' narrows the query, it does not assign).
+					if (data.length === 1 && !matchesKey(data, "ctrl+s")) {
+						query += data;
+						filtered = applyFilter(standby, query);
+						tui.requestRender();
+					}
 					return;
 				}
 
-				// --- NORMAL MODE -------------------------------------------------
+				// --- BASE MODE ------------------------------------------------
 				if (matchesKey(data, "escape")) {
 					finish({ action: "cancel" });
 					return;
@@ -299,14 +321,26 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					return;
 				}
 
-				// Ctrl+Shift+1/2/3 must be checked before the bare-digit equip so
+				// Ctrl+Shift+1/2/3 checked before the bare-digit equip so the
 				// two chords never collide on terminals that blur modifiers.
 				for (const key of SLOT_KEYS) {
 					if (matchesKey(data, `ctrl+shift+${key}`)) {
 						const row = filtered[selected];
-						if (row) finish({ action: "assign", slot: key, ref: row.ref, query });
+						if (row) {
+							toast = opts.mutate({ kind: "assign", slot: key, ref: row.ref });
+							rebuild();
+						}
 						return;
 					}
+				}
+
+				if (matchesKey(data, "ctrl+shift+f")) {
+					const row = filtered[selected];
+					if (row) {
+						toast = opts.mutate({ kind: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref) });
+						rebuild();
+					}
+					return;
 				}
 
 				if (SLOT_KEYS.includes(data as "1" | "2" | "3")) {
@@ -316,15 +350,6 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					} else {
 						toast = undefined;
 						tui.requestRender();
-					}
-					return;
-				}
-
-				// Ctrl+Shift+f (or plain "F" fallback for legacy terminals)
-				if (matchesKey(data, "ctrl+shift+f") || data === "F") {
-					const row = filtered[selected];
-					if (row) {
-						finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref), query });
 					}
 					return;
 				}
