@@ -146,11 +146,7 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 			const slotArg = args?.trim();
 			if (slotArg === "1" || slotArg === "2" || slotArg === "3") {
 				const ref = resolved.config.slots[slotArg];
-				if (ref) {
-					await equipRef(ctx, ref);
-				} else {
-					ctx.ui.notify(`Slot ${slotArg} is empty — open /loadout and press Ctrl+Shift+${slotArg} to assign`, "warning");
-				}
+				if (ref) await equipRef(ctx, ref);
 				return;
 			}
 			await openHud(ctx);

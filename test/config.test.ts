@@ -90,6 +90,11 @@ describe("normalization", () => {
 		expect(cfg.favorites).toEqual(["a/b"]);
 	});
 
+	test("normalizeConfig dedupes favorites", () => {
+		const cfg = normalizeConfig({ favorites: ["a/b", "c/d", "a/b", "a/b"] });
+		expect(cfg.favorites).toEqual(["a/b", "c/d"]);
+	});
+
 	test("filters malformed catalog entries", () => {
 		const cfg = normalizeConfig({
 			customCatalog: [{ id: "a/b", meta: "$1/M" }, { nope: true }, { id: "" }, "junk"],
@@ -122,11 +127,11 @@ describe("slot assignment", () => {
 });
 
 describe("equip & favorites", () => {
-	test("equip sets activeModelId and favorites the model", () => {
+	test("equip sets activeModelId without auto-favoriting", () => {
 		const cfg = defaultConfig();
 		equip(cfg, "anthropic/claude-sonnet-4-5");
 		expect(cfg.activeModelId).toBe("anthropic/claude-sonnet-4-5");
-		expect(isFavorite(cfg, "anthropic/claude-sonnet-4-5")).toBe(true);
+		expect(isFavorite(cfg, "anthropic/claude-sonnet-4-5")).toBe(false);
 	});
 
 	test("toggleFavorite flips state and reports it", () => {

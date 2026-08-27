@@ -59,15 +59,21 @@ type HudOptions = {
 const NAME_W = 36;
 const PROV_W = 13;
 
-const metaFor = (config: LoadoutConfig, ref: ModelRef): string =>
-	config.customCatalog.find((e) => e.id === ref)?.meta ?? "";
-
-const labelFor = (config: LoadoutConfig, ref: ModelRef): string =>
-	config.customCatalog.find((e) => e.id === ref)?.label ?? shortName(ref);
+/** Build O(1) lookup maps for custom-catalog name/meta overrides once. */
+const buildCatalogMaps = (config: LoadoutConfig): { meta: Map<string, string>; label: Map<string, string> } => {
+	const meta = new Map<string, string>();
+	const label = new Map<string, string>();
+	for (const entry of config.customCatalog) {
+		if (entry.meta) meta.set(entry.id, entry.meta);
+		if (entry.label) label.set(entry.id, entry.label);
+	}
+	return { meta, label };
+};
 
 /** Build the standby list: favorites first, then remaining catalog. */
 const buildStandby = (opts: { config: LoadoutConfig; catalog: ListRow[] }): ListRow[] => {
 	const { config, catalog } = opts;
+	const { label, meta } = buildCatalogMaps(config);
 	const slotted = new Set(SLOT_KEYS.map((k) => config.slots[k]).filter(Boolean) as string[]);
 	const rows: ListRow[] = [];
 	const seen = new Set<string>();
@@ -75,7 +81,12 @@ const buildStandby = (opts: { config: LoadoutConfig; catalog: ListRow[] }): List
 	for (const ref of config.favorites) {
 		if (slotted.has(ref) || seen.has(ref)) continue;
 		seen.add(ref);
-		rows.push({ ref, label: labelFor(config, ref), provider: parseModelRef(ref).provider, meta: metaFor(config, ref) });
+		rows.push({
+			ref,
+			label: label.get(ref) ?? shortName(ref),
+			provider: parseModelRef(ref).provider,
+			meta: meta.get(ref) ?? "",
+		});
 	}
 	for (const row of catalog) {
 		if (slotted.has(row.ref) || seen.has(row.ref)) continue;
@@ -143,9 +154,10 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 		};
 
 		const { config } = opts;
+const { meta: catalogMeta, label: catalogLabel } = buildCatalogMaps(config);
 
 		const render = (width: number): string[] => {
-			const inner = Math.min(79, Math.max(40, width - 4));
+			const inner = Math.max(30, Math.min(79, width - 4));
 			const line = (content = ""): string => {
 				const vw = visibleWidth(content);
 				const pad = Math.max(0, inner - vw);
@@ -179,7 +191,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 				const label = `${SLOT_LABELS[key]}:`;
 				if (ref) {
 					const fav = isFavorite(config, ref) ? star("(*)") : "   ";
-					const meta = metaFor(config, ref);
+					const meta = catalogMeta.get(ref) ?? "";
 					const isActive = ref === active;
 					out.push(
 						line(

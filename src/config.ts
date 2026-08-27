@@ -51,7 +51,8 @@ export const normalizeConfig = (raw: unknown): LoadoutConfig => {
 	}
 
 	if (Array.isArray(obj.favorites)) {
-		cfg.favorites = obj.favorites.filter((f): f is ModelRef => typeof f === "string" && f.length > 0);
+		// Dedupe on load — duplicates get merged into a Set and back.
+		cfg.favorites = [...new Set(obj.favorites.filter((f): f is ModelRef => typeof f === "string" && f.length > 0))];
 	}
 
 	if (Array.isArray(obj.customCatalog)) {
@@ -112,14 +113,18 @@ export const saveConfig = (resolved: ResolvedConfig): void => {
 // Mutations (pure helpers operating on a LoadoutConfig; callers persist)
 // ---------------------------------------------------------------------------
 
+/** O(1) favorite check/insert — favorites list is a Set at heart. */
+export const ensureFavorite = (config: LoadoutConfig, ref: ModelRef): void => {
+	if (!config.favorites.includes(ref)) config.favorites.push(ref);
+};
+
 export const equip = (config: LoadoutConfig, ref: ModelRef): void => {
 	config.activeModelId = ref;
-	if (!config.favorites.includes(ref)) config.favorites.push(ref);
 };
 
 export const assignSlot = (config: LoadoutConfig, slot: SlotKey, ref: ModelRef): void => {
 	config.slots[slot] = ref;
-	if (!config.favorites.includes(ref)) config.favorites.push(ref);
+	ensureFavorite(config, ref); // assigning to a slot always favorites
 };
 
 export const clearSlot = (config: LoadoutConfig, slot: SlotKey): void => {
