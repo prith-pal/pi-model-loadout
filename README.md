@@ -19,9 +19,9 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 │      [6] claude-3-7-sonnet               [anthropic]                       │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  [1-3] Instant Equip Slot    [Alt+1/2/3] Assign Highlighted to Slot        │
+│  [1-3] Instant Equip Slot    [Ctrl+Shift+1/2/3] Assign Highlighted to Slot        │
 │  [↑/↓] Select Standby        [Enter] Equip Selected                         │
-│  [Alt+F] Toggle Star (*)    [Esc] Cancel / Close                           │
+│  [Ctrl+Shift+F] Toggle Star (*)    [Esc] Cancel / Close                           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -59,23 +59,7 @@ pi -e ./pi-model-loadout-switcher/src/index.ts
 
 ### Inside the HUD
 
-> **macOS terminal caveat:** this HUD uses `Alt+1/2/3` and `Alt+F`. On macOS,
-> Option produces special characters (`¡`, `™`) unless your terminal maps
-> Option to Meta. Enable "Option as Meta" / "Option as ESC+" in iTerm2,
-> WezTerm, Ghostty, or cmux so Alt chords transmit cleanly.
-
-
-| Key | Action |
-|---|---|
-| `1` / `2` / `3` | Instant-equip Quick Slot 1/2/3, persist, and close |
-| `↑` / `↓` | Browse standby favorites & catalog |
-| `Enter` | Equip the highlighted standby model |
-| `Alt+1` / `Alt+2` / `Alt+3` | Assign highlighted model to that slot (auto-stars it) |
-| `Ctrl+S` | Enter search mode — keystrokes fuzzy-filter the standby list live |
-| `Alt+F` | Toggle favorite — starred models show a gray `(*)` tag |
-| `Esc` | (search) clear filter / (normal) close without changing anything |
-
-### Session restore
+## Session restore
 
 On `session_start`, the extension re-applies your saved `activeModelId` (falling back to Slot 1) — zero manual setup after restart, `/new`, or `/resume`.
 

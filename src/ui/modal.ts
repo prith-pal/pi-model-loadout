@@ -3,7 +3,7 @@
  * ctx.ui.custom(). Pure keyboard-driven: no timers, no background I/O.
  *
  * Two input modes:
- *  - NORMAL: 1/2/3 equip, Alt+1/2/3 assign, Alt+F star, ↑↓ navigate, Enter equip, Esc close.
+ *  - NORMAL: 1/2/3 equip, Ctrl+Shift+1/2/3 assign, Ctrl+Shift+F star, ↑↓ navigate, Enter equip, Esc close.
  *  - SEARCH (Ctrl+S): keystrokes type into a filter box; the standby list
  *    fuzzy-filters live. Esc clears the text and exits search; Esc on empty
  *    text closes the HUD. ↑↓ move within the filtered list.
@@ -169,7 +169,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 						),
 					);
 				} else {
-					out.push(line(`  ${dim(`[${key}]`)} ${padCell(label, 10)} ${dim("(empty — Alt+" + key + " on a standby row to assign)")}`));
+					out.push(line(`  ${dim(`[${key}]`)} ${padCell(label, 10)} ${dim("(empty — Ctrl+Shift+" + key + " on a standby row to assign)")}`));
 				}
 			}
 			out.push(line());
@@ -209,12 +209,12 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 				? [
 						" [Type] Filter standby list     [Esc] Clear filter / close when empty",
 						" [↑/↓] Move in filtered list   [Enter] Equip highlighted",
-						" [Alt+1/2/3] Assign           [Alt+F] Toggle Star (*)",
+						" [Ctrl+Shift+1/2/3] Assign           [Ctrl+Shift+F] Toggle Star (*)",
 					]
 				: [
-						" [1-3] Instant Equip Slot    [Alt+1/2/3] Assign Highlighted to Slot",
+						" [1-3] Instant Equip Slot    [Ctrl+Shift+1/2/3] Assign Highlighted to Slot",
 						" [↑/↓] Select Standby        [Enter] Equip Selected",
-						" [Ctrl+S] Filter             [Alt+F] Toggle Star (*)    [Esc] Close",
+						" [Ctrl+S] Filter             [Ctrl+Shift+F] Toggle Star (*)    [Esc] Close",
 					];
 			for (const h of hints) out.push(line(muted(h)));
 			if (toast) {
@@ -263,14 +263,14 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 						return;
 					}
 					for (const key of SLOT_KEYS) {
-						if (matchesKey(data, `alt+${key}`)) {
+						if (matchesKey(data, `ctrl+shift+${key}`)) {
 							const row = filtered[selected];
 							if (row) finish({ action: "assign", slot: key, ref: row.ref, query });
 							return;
 						}
 					}
-					// Alt+f, or plain "F" as fallback when Option-as-Alt is off (macOS)
-				if (matchesKey(data, "alt+f") || data === "F") {
+					// Ctrl+Shift+f (or plain "F" fallback for legacy terminals)
+				if (matchesKey(data, "ctrl+shift+f") || data === "F") {
 						const row = filtered[selected];
 						if (row) {
 							finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref), query });
@@ -299,10 +299,10 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					return;
 				}
 
-				// Alt+1/2/3 must be checked before the bare-digit equip so the
+				// Ctrl+Shift+1/2/3 must be checked before the bare-digit equip so
 				// two chords never collide on terminals that blur modifiers.
 				for (const key of SLOT_KEYS) {
-					if (matchesKey(data, `alt+${key}`)) {
+					if (matchesKey(data, `ctrl+shift+${key}`)) {
 						const row = filtered[selected];
 						if (row) finish({ action: "assign", slot: key, ref: row.ref, query });
 						return;
@@ -320,8 +320,8 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					return;
 				}
 
-				// Alt+f, or plain "F" as fallback when Option-as-Alt is off (macOS)
-				if (matchesKey(data, "alt+f") || data === "F") {
+				// Ctrl+Shift+f (or plain "F" fallback for legacy terminals)
+				if (matchesKey(data, "ctrl+shift+f") || data === "F") {
 					const row = filtered[selected];
 					if (row) {
 						finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref), query });

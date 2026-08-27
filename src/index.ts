@@ -154,7 +154,7 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 				if (ref) {
 					await equipRef(ctx, ref);
 				} else {
-					ctx.ui.notify(`Slot ${slotArg} is empty — open /loadout and press Alt+${slotArg} to assign`, "warning");
+					ctx.ui.notify(`Slot ${slotArg} is empty — open /loadout and press Ctrl+Shift+${slotArg} to assign`, "warning");
 				}
 				return;
 			}
