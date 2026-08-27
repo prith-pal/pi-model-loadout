@@ -16,7 +16,7 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 │ EQUIPPED SLOTS (press 1, 2, or 3 to instant equip):                         │
 │ [1] Primary:   moonshotai/Kimi-K2-Instruct  [huggingface]  (*) ◂ active    │
 │ [2] Secondary: (empty — Ctrl+Shift+2 on a standby row to assign)            │
-│ [3] Heavy:     minimaxai/MiniMax-M2         [huggingface]  (*)             │
+│ [3] Tertiary:  minimaxai/MiniMax-M2         [huggingface]  (*)             │
 │                                                                             │
 │ STANDBY FAVORITES & CATALOG (↑/↓ to browse):                                │
 │ ❯ [4] MiniMaxAI/MiniMax-M2                  [huggingface]  (*)             │

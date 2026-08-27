@@ -13,7 +13,7 @@ export const SLOT_KEYS: readonly SlotKey[] = ["1", "2", "3"];
 export const SLOT_LABELS: Record<SlotKey, string> = {
 	"1": "Primary",
 	"2": "Secondary",
-	"3": "Heavy",
+	"3": "Tertiary",
 };
 
 /**
