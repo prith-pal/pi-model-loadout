@@ -269,7 +269,8 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 							return;
 						}
 					}
-					if (matchesKey(data, "alt+f")) {
+					// Alt+f, or plain "F" as fallback when Option-as-Alt is off (macOS)
+				if (matchesKey(data, "alt+f") || data === "F") {
 						const row = filtered[selected];
 						if (row) {
 							finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref), query });
@@ -319,7 +320,8 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					return;
 				}
 
-				if (matchesKey(data, "alt+f")) {
+				// Alt+f, or plain "F" as fallback when Option-as-Alt is off (macOS)
+				if (matchesKey(data, "alt+f") || data === "F") {
 					const row = filtered[selected];
 					if (row) {
 						finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref), query });
