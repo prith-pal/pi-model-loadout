@@ -1,16 +1,20 @@
 {
   "name": "pi-model-loadout",
   "version": "1.0.0",
-  "description": "Video game–style weapon loadout (Quick Slots 1/2/3) and favorites for instant model switching in pi-coding-agent — local Unsloth/GGUF and cloud providers.",
+  "description": "Weapon-loadout quick slots (1/2/3) and star favorites for instant model switching in pi-coding-agent \u2014 local Unsloth GGUF + OpenRouter/Anthropic/Google.",
   "type": "module",
   "license": "MIT",
   "keywords": [
     "pi-coding-agent",
     "pi-extension",
-    "loadout-plugin",
-    "loadout",
+    "llm-router",
     "unsloth",
-    "openrouter"
+    "openrouter",
+    "terminal-ui",
+    "model-picker",
+    "llm",
+    "tui",
+    "pi"
   ],
   "engines": {
     "node": ">=18"
