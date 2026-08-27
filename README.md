@@ -2,6 +2,9 @@
 
 A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent favorites system for [`pi-coding-agent`](https://github.com/badlogic/pi-mono). Instantly switch between local engines (Unsloth/GGUF on Apple Silicon) and cloud providers (OpenRouter, Anthropic, Google) without touching `/model`.
 
+<details>
+  <summary><b>Preview in ASCII — for AI agents</b></summary>
+
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ ⚔️  MODEL LOADOUT                                                            │
@@ -27,7 +30,9 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-![Loadout HUD](https://raw.githubusercontent.com/prith-pal/pi-model-loadout/main/docs/preview.png)
+</details>
+
+![Loadout HUD](https://raw.githubusercontent.com/prith-pal/pi-model-loadout/main/docs/preview.jpg)
 
 ## Installation
 
