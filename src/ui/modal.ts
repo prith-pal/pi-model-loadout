@@ -19,7 +19,7 @@ import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { matchesKey, visibleWidth } from "@earendil-works/pi-tui";
 import { isFavorite, scopeLabel, slotOf } from "../config.js";
 import { type LoadoutConfig, type ModelRef, SLOT_KEYS, SLOT_LABELS, parseModelRef, shortName } from "../types.js";
-import { truncate } from "./formatter.js";
+const truncate = (s: string, max: number): string => (s.length <= max ? s : `${s.slice(0, Math.max(0, max - 1))}…`);
 
 /** Result of a HUD session — only emitted when the HUD actually closes. */
 export type HudResult =
@@ -217,8 +217,10 @@ const { meta: catalogMeta, label: catalogLabel } = buildCatalogMaps(config);
 				out.push(line(`   ${dim(standby.length === 0 ? "(no standby models)" : `(no matches for "${query}")`)}`));
 			}
 			const MAX_ROWS = 8;
+			// Compute the visible window clamped to [0, filtered.length - MAX_ROWS].
 			const start = Math.max(0, Math.min(selected - 3, filtered.length - MAX_ROWS));
 			const window = filtered.slice(start, start + MAX_ROWS);
+			// Guard: no more rows than filtered itself.
 			window.forEach((row, i) => {
 				const idx = start + i;
 				const isSel = idx === selected;
