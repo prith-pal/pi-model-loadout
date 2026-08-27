@@ -211,10 +211,9 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 
 	pi.on("session_start", async (_event, ctx) => {
 		resolved = resolveConfig(ctx.cwd);
-		const cfg = resolved.config;
 
 		// Zero-setup restore: re-apply the saved active model (fall back to slot 1).
-		const restoreRef = cfg.activeModelId ?? cfg.slots["1"];
+		const restoreRef = resolved.config.activeModelId ?? resolved.config.slots["1"];
 		if (!restoreRef) return;
 
 		// Already on the right model (e.g. restored by pi itself)? Skip.
