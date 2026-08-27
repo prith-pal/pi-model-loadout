@@ -169,7 +169,7 @@ const { meta: catalogMeta, label: catalogLabel } = buildCatalogMaps(config);
 			const out: string[] = [];
 
 			out.push(border("┌", "─", "┐"));
-			out.push(line(` ${accent(theme.bold("⚔️  MODEL LOADOUT & FAST SWITCHER"))}`));
+			out.push(line(` ${accent(theme.bold("⚔️  MODEL LOADOUT"))}`));
 			out.push(border("├", "─", "┤"));
 			out.push(
 				line(

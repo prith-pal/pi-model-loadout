@@ -4,7 +4,7 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ ⚔️  MODEL LOADOUT & FAST SWITCHER                                           │
+│ ⚔️  MODEL LOADOUT                                           │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ Scope: [ Workspace (.pi/) ]   Active: Qwen3.8-27B-Instruct [unsloth]        │
 │                                                                             │
