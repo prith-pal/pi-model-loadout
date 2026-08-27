@@ -27,7 +27,7 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
-![Loadout HUD](docs/preview.png)
+![Loadout HUD](https://raw.githubusercontent.com/prith-pal/pi-model-loadout/main/docs/preview.png)
 
 ## Installation
 
