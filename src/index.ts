@@ -104,7 +104,7 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 	};
 
 	/** Open the HUD loop; actions that mutate state re-open with a toast. */
-	const openHud = async (ctx: ExtensionContext, toast?: string): Promise<void> => {
+	const openHud = async (ctx: ExtensionContext, toast?: string, query?: string): Promise<void> => {
 		if (!resolved) resolved = resolveConfig(ctx.cwd);
 		const result: HudResult = await showLoadoutHud(ctx, {
 			config: resolved.config,
@@ -112,6 +112,7 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 			activeModelId: resolved.config.activeModelId,
 			catalog: catalogRows(ctx),
 			initialToast: toast,
+			initialQuery: query,
 		});
 
 		switch (result.action) {
@@ -123,13 +124,17 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 			case "assign": {
 				assignSlot(resolved.config, result.slot, result.ref);
 				persist();
-				await openHud(ctx, `Assigned ${result.ref} → Slot ${result.slot}`);
+				await openHud(ctx, `Assigned ${result.ref} → Slot ${result.slot}`, result.query ?? undefined);
 				return;
 			}
 			case "favorite": {
 				const nowFav = toggleFavorite(resolved.config, result.ref);
 				persist();
-				await openHud(ctx, nowFav ? `Starred ${result.ref} (*)` : `Unstarred ${result.ref}`);
+				await openHud(
+					ctx,
+					nowFav ? `Starred ${result.ref} (*)` : `Unstarred ${result.ref}`,
+					result.query ?? undefined,
+				);
 				return;
 			}
 		}

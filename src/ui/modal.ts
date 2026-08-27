@@ -18,8 +18,8 @@ import { truncate } from "./formatter.js";
 /** Result of a HUD session. */
 export type HudResult =
 	| { action: "equip"; ref: ModelRef }
-	| { action: "assign"; slot: "1" | "2" | "3"; ref: ModelRef }
-	| { action: "favorite"; ref: ModelRef; favorited: boolean }
+	| { action: "assign"; slot: "1" | "2" | "3"; ref: ModelRef; query: string }
+	| { action: "favorite"; ref: ModelRef; favorited: boolean; query: string }
 	| { action: "cancel" };
 
 type ListRow = {
@@ -37,6 +37,8 @@ type HudOptions = {
 	catalog: ListRow[];
 	/** Inline toast (e.g. "Assigned to slot 2") shown on re-render. */
 	initialToast?: string;
+	/** Filter query to preserve when a mutation re-opens the HUD. */
+	initialQuery?: string;
 };
 
 const NAME_W = 36;
@@ -92,8 +94,8 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 	return ctx.ui.custom<HudResult>((tui, theme, _kb, done) => {
 		let selected = 0;
 		let toast = opts.initialToast;
-		let query = "";
-		let mode: "base" | "search" = "base";
+		let query = opts.initialQuery ?? "";
+		let mode: "base" | "search" = opts.initialQuery ? "search" : "base";
 		const allStandby = buildStandby(opts);
 		let filtered = allStandby;
 		let finished = false;
@@ -263,23 +265,36 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					for (const key of SLOT_KEYS) {
 						if (matchesKey(data, `ctrl+${key}`)) {
 							const row = filtered[selected];
-							if (row) finish({ action: "assign", slot: key, ref: row.ref });
+							if (row) finish({ action: "assign", slot: key, ref: row.ref, query });
 							return;
 						}
 					}
 					if (matchesKey(data, "ctrl+f")) {
 						const row = filtered[selected];
 						if (row) {
-							finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref) });
+							finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref), query });
 						}
 						return;
 					}
-					// Printable character → append to filter
-					if (data.length === 1 && !matchesKey(data, "ctrl+s")) {
-						query += data;
-						refilter();
-						tui.requestRender();
-					}
+				// Legacy terminals (and certain Kitty edge cases) deliver Ctrl+1/2/3
+				// as the raw digit. When a row is highlighted, intercept the digit
+				// as a slot-assign; otherwise treat it as literal text (e.g. the '3'
+				// in "kimi-k3").
+				if (SLOT_KEYS.includes(data as "1" | "2" | "3") && filtered[selected]) {
+					finish({
+						action: "assign",
+						slot: data as "1" | "2" | "3",
+						ref: filtered[selected]!.ref,
+						query,
+					});
+					return;
+				}
+				// Printable character → append to filter
+				if (data.length === 1 && !matchesKey(data, "ctrl+s")) {
+					query += data;
+					refilter();
+					tui.requestRender();
+				}
 					return;
 				}
 
@@ -309,7 +324,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 				for (const key of SLOT_KEYS) {
 					if (matchesKey(data, `ctrl+${key}`)) {
 						const row = filtered[selected];
-						if (row) finish({ action: "assign", slot: key, ref: row.ref });
+						if (row) finish({ action: "assign", slot: key, ref: row.ref, query });
 						return;
 					}
 				}
@@ -317,7 +332,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 				if (matchesKey(data, "ctrl+f")) {
 					const row = filtered[selected];
 					if (row) {
-						finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref) });
+						finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref), query });
 					}
 					return;
 				}
