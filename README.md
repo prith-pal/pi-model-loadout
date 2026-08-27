@@ -30,7 +30,7 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 **Option A — drop into your global extensions directory (hot-reloadable):**
 
 ```bash
-git clone <this-repo> ~/.pi/agent/extensions/pi-model-loadout
+git clone https://github.com/prith-pal/pi-model-loadout.git ~/.pi/agent/extensions/pi-model-loadout
 # then in pi: /reload
 ```
 
@@ -38,7 +38,7 @@ git clone <this-repo> ~/.pi/agent/extensions/pi-model-loadout
 
 ```json
 {
-  "packages": ["git:github.com/<you>/pi-model-loadout@v1"]
+  "packages": ["git:github.com/prith-pal/pi-model-loadout@v1"]
 }
 ```
 
