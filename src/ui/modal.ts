@@ -3,14 +3,16 @@
  * ctx.ui.custom(). Pure keyboard-driven: no timers, no background I/O.
  *
  * Two input modes:
- *  - BASE:   1/2/3 equip; Ctrl+Shift+1/2/3 assign; Ctrl+Shift+F star;
- *            ↑↓ navigate; Enter equip; Esc close.
- *  - SEARCH (Ctrl+S): keystrokes type into a filter box; the standby list
- *    fuzzy-filters live. Assign/favorite mutations stay inside the HUD —
- *    no re-open, so the query never clears on mutation.
+ *  - BASE:    1/2/3 equip, Ctrl+Shift+1/2/3 assign, Ctrl+Shift+F star,
+ *             ↑↓ navigate, Enter equip, Esc close, Ctrl+S enter search.
+ *  - SEARCH:  Ctrl+S entered; printable keys (digits included) filter;
+ *             Ctrl+Shift+1/2/3 assign, Ctrl+Shift+F star;
+ *             ↑↓/Enter operate on the filtered row;
+ *             Ctrl+U / Ctrl+Backspace clear query; Esc clears or exits.
  *
- * The filtered list is always a pure derivation `allStandby.filter(query)`;
- * state mutations only touch the config, then re-render.
+ * The filtered list is a pure derivation of allStandby.filter(query).
+ * Ctrl+Shift assign/favorite mutate in-place (no close/re-open) so the
+ * query and selection survive across mutations.
  */
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";

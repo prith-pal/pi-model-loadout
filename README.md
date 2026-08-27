@@ -59,6 +59,26 @@ pi -e ./pi-model-loadout-switcher/src/index.ts
 
 ### Inside the HUD
 
+| Key | Action |
+|---|---|
+| `1` / `2` / `3` | Instant-equip that slot and close |
+| `↑` / `↓` | Move the highlighted row |
+| `Enter` | Equip the highlighted row |
+| `Ctrl+Shift+1` / `Ctrl+Shift+2` / `Ctrl+Shift+3` | Assign highlighted row to that slot (auto-stars it) |
+| `Ctrl+Shift+F` | Toggle favorite `(*)` on the highlighted row (plain `F` also works) |
+| `Ctrl+S` | Enter search mode |
+| `Esc` | Close without changing anything |
+
+#### Search mode
+
+| Key | Action |
+|---|---|
+| *any printable char incl. digits* | Append to fuzzy filter (`3` in "kimi-k3" filters, not slot) |
+| `Backspace` | Delete one char |
+| `Ctrl+U` / `Ctrl+Backspace` | Clear the whole query |
+| `↑` / `↓` / `Enter` / `Ctrl+Shift+1/2/3` / `Ctrl+Shift+F` | Operate on the filtered highlighted row |
+| `Esc` | Clear query and exit to base mode; when query is empty, close the HUD |
+
 ## Session restore
 
 On `session_start`, the extension re-applies your saved `activeModelId` (falling back to Slot 1) — zero manual setup after restart, `/new`, or `/resume`.
