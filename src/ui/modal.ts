@@ -18,6 +18,9 @@
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { matchesKey, visibleWidth } from "@earendil-works/pi-tui";
 
+/** Bracketed-paste markers terminals wrap pasted text in (enabled in raw mode). */
+const PASTE_START = "\x1b[200~";
+const PASTE_END = "\x1b[201~";
 import { isFavorite, scopeLabel, slotOf } from "../config.js";
 import { type LoadoutConfig, type ModelRef, SLOT_KEYS, parseModelRef, shortName } from "../types.js";
 /**
@@ -380,6 +383,16 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 							toast = opts.mutate({ kind: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref) });
 							rebuild();
 						}
+						return;
+					}
+					// Bracketed paste (Cmd+V / Shift+Insert) → append the stripped content
+					// to the filter. Paste arrives wrapped in \x1b[200~…\x1b[201~ and
+					// would otherwise fall through every single-key branch above.
+					if (data.startsWith(PASTE_START)) {
+						const end = data.endsWith(PASTE_END) ? data.length - PASTE_END.length : data.length;
+						query += data.slice(PASTE_START.length, end);
+						filtered = applyFilter(standby, query);
+						tui.requestRender();
 						return;
 					}
 					// Printable character → append to filter (digits included —
