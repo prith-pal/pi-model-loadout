@@ -4,26 +4,30 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│ ⚔️  MODEL LOADOUT                                           │
+│ ⚔️  MODEL LOADOUT                                                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ Scope: [ Workspace (.pi/) ]   Active: Qwen3.8-27B-Instruct [unsloth]        │
+│ Scope: [ Global (~/.pi/agent/) ]  Active: moonshotai/Kimi-K2 [huggingface]  │
 │                                                                             │
-│  EQUIPPED SLOTS (press 1, 2, or 3 to instant equip):                        │
-│  [1] Primary  : Qwen3.8-27B-Instruct     [unsloth]     (*)  ◂ active       │
-│  [2] Secondary: openrouter/free          [openrouter]  (*)                 │
-│  [3] Heavy    : deepseek-v4              [deepseek]    (*)                 │
+│ 🔍 (Ctrl+S to filter)                                                       │
 │                                                                             │
-│  STANDBY FAVORITES & CATALOG (↑/↓ to browse):                               │
-│    ❯ [4] Gemma-4-26B-A4B                 [unsloth]     (*)                 │
-│      [5] gemini-2.5-flash                [google]      (*)                 │
-│      [6] claude-3-7-sonnet               [anthropic]                       │
+│ EQUIPPED SLOTS (press 1, 2, or 3 to instant equip):                         │
+│ [1] Primary:   moonshotai/Kimi-K2-Instruct  [huggingface]  (*) ◂ active    │
+│ [2] Secondary: (empty — Ctrl+Shift+2 on a standby row to assign)            │
+│ [3] Heavy:     minimaxai/MiniMax-M2         [huggingface]  (*)             │
 │                                                                             │
+│ STANDBY FAVORITES & CATALOG (↑/↓ to browse):                                │
+│ ❯ [4] MiniMaxAI/MiniMax-M2                  [huggingface]  (*)             │
+│   [5] moonshotai/Kimi-K2-Instruct           [huggingface]  (*)             │
+│   [6] MiniMax-M2.1                          [huggingface]                  │
+│   … 413 more (↑/↓ to scroll)                                                │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  [1-3] Instant Equip Slot    [Ctrl+Shift+1/2/3] Assign Highlighted to Slot        │
-│  [↑/↓] Select Standby        [Enter] Equip Selected                         │
-│  [Ctrl+Shift+F] Toggle Star (*)    [Esc] Cancel / Close                           │
+│ [1-3] Instant Equip Slot     [Ctrl+Shift+1/2/3] Assign Highlighted to Slot │
+│ [↑/↓] Select Standby         [Enter] Equip Selected                        │
+│ [Ctrl+S] Filter              [Ctrl+Shift+F] Toggle Star (*)   [Esc] Close  │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
+
+![Loadout HUD](docs/preview.png)
 
 ## Installation
 
