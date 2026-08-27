@@ -169,7 +169,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 						),
 					);
 				} else {
-					out.push(line(`  ${dim(`[${key}]`)} ${padCell(label, 10)} ${dim("(empty — Ctrl+" + key + " on a standby row to assign)")}`));
+					out.push(line(`  ${dim(`[${key}]`)} ${padCell(label, 10)} ${dim("(empty — Alt+" + key + " on a standby row to assign)")}`));
 				}
 			}
 			out.push(line());
