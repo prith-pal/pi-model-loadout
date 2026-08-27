@@ -10,12 +10,6 @@ export type SlotKey = "1" | "2" | "3";
 
 export const SLOT_KEYS: readonly SlotKey[] = ["1", "2", "3"];
 
-export const SLOT_LABELS: Record<SlotKey, string> = {
-	"1": "Primary",
-	"2": "Secondary",
-	"3": "Tertiary",
-};
-
 /**
  * User-supplied catalog entry for models that may not (yet) be resolvable in
  * pi's registry, or to attach display metadata (cost, speed, notes).
@@ -75,3 +69,15 @@ export const parseModelRef = (ref: ModelRef): { provider: string; modelId: strin
 
 /** Short display name: the modelId part of a ref. */
 export const shortName = (ref: ModelRef): string => parseModelRef(ref).modelId;
+
+/**
+ * Format per-million-token cost for the HUD: "$0.16 / $0.47" (costs are
+ * always $/1M, so the unit is implied). Returns "free" when both input and
+ * output are zero.
+ */
+export const formatCost = (cost?: { input: number; output: number } | null): string => {
+	if (!cost) return "";
+	if (cost.input === 0 && cost.output === 0) return "free";
+	const usd = (n: number): string => (n === 0 ? "0" : String(parseFloat(n.toFixed(3))));
+	return `$${usd(cost.input)} / $${usd(cost.output)}`;
+};

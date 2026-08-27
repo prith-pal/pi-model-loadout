@@ -17,9 +17,20 @@
 
 import type { ExtensionContext } from "@earendil-works/pi-coding-agent";
 import { matchesKey, visibleWidth } from "@earendil-works/pi-tui";
+
 import { isFavorite, scopeLabel, slotOf } from "../config.js";
-import { type LoadoutConfig, type ModelRef, SLOT_KEYS, SLOT_LABELS, parseModelRef, shortName } from "../types.js";
-const truncate = (s: string, max: number): string => (s.length <= max ? s : `${s.slice(0, Math.max(0, max - 1))}…`);
+import { type LoadoutConfig, type ModelRef, SLOT_KEYS, parseModelRef, shortName } from "../types.js";
+/**
+ * Truncate keeping the tail ("…MiniMax-M2.5"). Model ids repeat their org
+ * prefix within a provider but the tail (version/flavor) disambiguates,
+ * and the filter query matches the full id anyway.
+ */
+const truncateTail = (s: string, max: number): string => (s.length <= max ? s : `…${s.slice(-(Math.max(0, max - 1)))}`);
+/** Right-align within a fixed visible width (left-padded). */
+const padRight = (s: string, w: number): string => {
+	const vw = visibleWidth(s);
+	return vw >= w ? s : " ".repeat(w - vw) + s;
+};
 
 /** Result of a HUD session — only emitted when the HUD actually closes. */
 export type HudResult =
@@ -40,6 +51,8 @@ type ListRow = {
 	label: string;
 	provider: string;
 	meta: string;
+	/** Pre-formatted cost string, e.g. "$0.16 / $0.47 per 1M" ("" when unknown). */
+	cost?: string;
 };
 
 type HudOptions = {
@@ -55,9 +68,6 @@ type HudOptions = {
 	/** Mutator that applies a config change in-place + persists. */
 	mutate: HudMutator;
 };
-
-const NAME_W = 36;
-const PROV_W = 13;
 
 /** Build O(1) lookup maps for custom-catalog name/meta overrides once. */
 const buildCatalogMaps = (config: LoadoutConfig): { meta: Map<string, string>; label: Map<string, string> } => {
@@ -78,14 +88,24 @@ const buildStandby = (opts: { config: LoadoutConfig; catalog: ListRow[] }): List
 	const rows: ListRow[] = [];
 	const seen = new Set<string>();
 
+	// Catalog rows carry registry data (cost, meta); favorites reuse them so a
+	// starred model still shows its identifier + cost.
+	const catalogByRef = new Map(catalog.map((r) => [r.ref, r]));
+
 	for (const ref of config.favorites) {
 		if (slotted.has(ref) || seen.has(ref)) continue;
 		seen.add(ref);
+		const catalogRow = catalogByRef.get(ref);
+		if (catalogRow) {
+			rows.push(catalogRow);
+			continue;
+		}
 		rows.push({
 			ref,
 			label: label.get(ref) ?? shortName(ref),
 			provider: parseModelRef(ref).provider,
 			meta: meta.get(ref) ?? "",
+			cost: "",
 		});
 	}
 	for (const row of catalog) {
@@ -154,7 +174,10 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 		};
 
 		const { config } = opts;
-const { meta: catalogMeta, label: catalogLabel } = buildCatalogMaps(config);
+		const { meta: catalogMeta } = buildCatalogMaps(config);
+		// Registry cost for a ref — lets slotted models show the same cost
+		// column as standby rows.
+		const costByRef = new Map(opts.catalog.map((r) => [r.ref, r.cost ?? ""]));
 
 		const render = (width: number): string[] => {
 			const inner = Math.max(30, Math.min(79, width - 4));
@@ -185,23 +208,63 @@ const { meta: catalogMeta, label: catalogLabel } = buildCatalogMaps(config);
 			out.push(line(` 🔍 ${query}${cursor} ${searchHint}`));
 			out.push(line());
 
+			// Column widths, uniform across slots + standby so every column
+			// aligns. provW: widest provider tag among standby rows + slotted
+			// models (few providers, stable across scrolls).
+			const provSet = new Set([
+				...filtered.map((r) => r.provider),
+				...Object.values(config.slots).filter((v): v is string => !!v).map((r) => parseModelRef(r).provider),
+			]);
+			const provW = Math.max(6, ...[...provSet].map((p) => visibleWidth(`[${p}]`)));
+
+			const MAX_ROWS = 8;
+			// Compute the visible window clamped to [0, filtered.length - MAX_ROWS].
+			const start = Math.max(0, Math.min(selected - 3, filtered.length - MAX_ROWS));
+			const window = filtered.slice(start, start + MAX_ROWS);
+			// costW + maxSuffix are sized to the VISIBLE window + slotted models,
+			// so a rarely-seen $0.2574 / $1.0287-style price doesn't hollow out
+			// the column for typical rows (width may shift by a char on scroll).
+			const slotCosts = Object.values(config.slots)
+				.filter((v): v is string => !!v)
+				.map((ref) => costByRef.get(ref) ?? "");
+			const costW = Math.max(
+				4,
+				...window.map((r) => (r.cost ? visibleWidth(r.cost) : 0)),
+				...slotCosts.map((c) => visibleWidth(c)),
+			);
+			const maxSuffix = Math.max(
+				0,
+				...window.map((r) => {
+					const b = slotOf(config, r.ref) ? visibleWidth(" ⚡1") : 0;
+					const m = r.meta ? 1 + visibleWidth(r.meta) : 0;
+					return b + m;
+				}),
+			);
+			// Prefix is `   ❯ [N] ` (worst case 12 cols); then label, gap, right-
+			// aligned provider, fav (3), badge/meta, gap, right-aligned cost.
+			const labelW = Math.max(16, inner - 12 - 1 - provW - 3 - maxSuffix - 1 - costW);
+
 			out.push(line(` ${theme.bold("EQUIPPED SLOTS")} ${muted("(press 1, 2, or 3 to instant equip):")}`));
 			for (const key of SLOT_KEYS) {
 				const ref = config.slots[key];
-				const label = `${SLOT_LABELS[key]}:`;
 				if (ref) {
 					const fav = isFavorite(config, ref) ? star("(*)") : "   ";
 					const meta = catalogMeta.get(ref) ?? "";
 					const isActive = ref === active;
-					out.push(
-						line(
-							`  ${accent(`[${key}]`)} ${padCell(label, 10)} ${padCell(truncate(shortName(ref), NAME_W - 11), NAME_W - 11)}${muted(
-								padCell(`[${parseModelRef(ref).provider}]`, PROV_W),
-							)} ${fav}${meta ? ` ${dim("│")} ${muted(meta)}` : ""}${isActive ? ` ${star("◂ active")}` : ""}`,
-						),
-					);
+					const prov = `[${parseModelRef(ref).provider}]`;
+					// Same columns as standby: slot prefix `  [1] ` is 7 cols vs the
+					// standby's ~9, so nameW = labelW + 2 lines up the provider and
+					// cost columns exactly.
+					const nameW = labelW + 3;
+					const cost = costByRef.get(ref) ?? "";
+					const costStr = cost ? ` ${padRight(muted(cost), costW)}` : "";
+					const midStr = padCell(meta ? ` ${dim("│")} ${muted(meta)}` : "", maxSuffix);
+					const body = `${padCell(truncateTail(shortName(ref), nameW), nameW)} ${muted(padRight(prov, provW))} ${fav}${midStr}${costStr}`;
+					// The active slot is highlighted (accent), matching the
+				// header's Active: line, without extra column width.
+					out.push(line(`  ${accent(`[${key}]`)} ${isActive ? accent(body) : body}`));
 				} else {
-					out.push(line(`  ${dim(`[${key}]`)} ${padCell(label, 10)} ${dim("(empty — Ctrl+Shift+" + key + " to assign)")}`));
+					out.push(line(`  ${dim(`[${key}]`)} ${dim("(empty — Ctrl+Shift+" + key + " to assign)")}`));
 				}
 			}
 			out.push(line());
@@ -216,11 +279,6 @@ const { meta: catalogMeta, label: catalogLabel } = buildCatalogMaps(config);
 			if (filtered.length === 0) {
 				out.push(line(`   ${dim(standby.length === 0 ? "(no standby models)" : `(no matches for "${query}")`)}`));
 			}
-			const MAX_ROWS = 8;
-			// Compute the visible window clamped to [0, filtered.length - MAX_ROWS].
-			const start = Math.max(0, Math.min(selected - 3, filtered.length - MAX_ROWS));
-			const window = filtered.slice(start, start + MAX_ROWS);
-			// Guard: no more rows than filtered itself.
 			window.forEach((row, i) => {
 				const idx = start + i;
 				const isSel = idx === selected;
@@ -228,9 +286,12 @@ const { meta: catalogMeta, label: catalogLabel } = buildCatalogMaps(config);
 				const fav = isFavorite(config, row.ref) ? star("(*)") : "   ";
 				const slot = slotOf(config, row.ref);
 				const slotBadge = slot ? accent(`⚡${slot}`) : "";
-				const body = `${padCell(truncate(row.label, NAME_W - 6), NAME_W - 6)}${muted(
-					padCell(`[${row.provider}]`, PROV_W),
-				)} ${fav}${row.meta ? ` ${dim("│")} ${muted(row.meta)}` : ""}${slotBadge ? ` ${slotBadge}` : ""}`;
+				const metaStr = row.meta ? ` ${dim("│")} ${muted(row.meta)}` : "";
+				const badgeStr = slotBadge ? ` ${slotBadge}` : "";
+				const costStr = row.cost ? ` ${padRight(muted(row.cost), costW)}` : "";
+				// Pad the badge/meta region so every row's cost column starts at the same spot.
+				const midStr = padCell(`${badgeStr}${metaStr}`, maxSuffix);
+				const body = `${padCell(truncateTail(row.label, labelW), labelW)} ${muted(padRight(`[${row.provider}]`, provW))} ${fav}${midStr}${costStr}`;
 				out.push(line(`   ${isSel ? accent(`❯ ${num} `) : dim(`  ${num} `)}${isSel ? accent(body) : body}`));
 			});
 			if (filtered.length > MAX_ROWS) {

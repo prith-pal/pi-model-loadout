@@ -20,7 +20,7 @@ import {
 	slotOf,
 	toggleFavorite,
 } from "./config.js";
-import { type ModelRef, type ResolvedConfig, parseModelRef } from "./types.js";
+import { type ModelRef, type ResolvedConfig, formatCost, parseModelRef, shortName } from "./types.js";
 import { type HudResult, showLoadoutHud } from "./ui/modal.js";
 import { UNSLOTH_HINT, checkLocalServer, isUnslothRef } from "./unsloth/health.js";
 
@@ -76,7 +76,7 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 		const labelOf = (ref: string, fallback: string) =>
 			cfg.customCatalog.find((e) => e.id === ref)?.label ?? fallback;
 
-		const rows: { ref: string; label: string; provider: string; meta: string }[] = [];
+		const rows: { ref: string; label: string; provider: string; meta: string; cost: string }[] = [];
 		const seen = new Set<string>();
 
 		// Scoped models first (mirrors the built-in picker), else full catalogue.
@@ -86,7 +86,14 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 			const ref = `${model.provider}/${model.id}`;
 			if (seen.has(ref)) continue;
 			seen.add(ref);
-			rows.push({ ref, label: labelOf(ref, model.name ?? model.id), provider: model.provider, meta: metaOf(ref) });
+			rows.push({
+				ref,
+				// Identifier ("qwen/qwen3.8-flash"), not the display name.
+				label: labelOf(ref, model.id),
+				provider: model.provider,
+				meta: metaOf(ref),
+				cost: formatCost(model.cost),
+			});
 		}
 
 		// Custom catalog entries that aren't in the registry still show up.
@@ -95,9 +102,10 @@ export default function loadoutExtension(pi: ExtensionAPI) {
 			seen.add(entry.id);
 			rows.push({
 				ref: entry.id,
-				label: entry.label ?? entry.id,
+				label: entry.label ?? shortName(entry.id),
 				provider: parseModelRef(entry.id).provider,
 				meta: entry.meta ?? "",
+				cost: "",
 			});
 		}
 		return rows;
