@@ -9,20 +9,25 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │ ⚔️  MODEL LOADOUT                                                            │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│ Scope: [ Global (~/.pi/agent/) ]  Active: moonshotai/Kimi-K2 [huggingface]  │
+│ Scope: [ Global (~/.pi/agent/) ]  Active: moonshotai/kimi-k3 [openrouter]    │
 │                                                                             │
 │ 🔍 (Ctrl+S to filter)                                                       │
 │                                                                             │
 │ EQUIPPED SLOTS (press 1, 2, or 3 to instant equip):                         │
-│ [1] Primary:   moonshotai/Kimi-K2-Instruct  [huggingface]  (*) ◂ active    │
-│ [2] Secondary: (empty — Ctrl+Shift+2 on a standby row to assign)            │
-│ [3] Tertiary:  minimaxai/MiniMax-M2         [huggingface]  (*)             │
+│ [1] Primary:   moonshotai/kimi-k3            [openrouter]  (*) ◂ active    │
+│ [2] Secondary: (empty — Ctrl+Shift+2 on a standby row to assign)           │
+│ [3] Tertiary:  qwen/qwen3.8-27b            [openrouter]  (*)             │
 │                                                                             │
 │ STANDBY FAVORITES & CATALOG (↑/↓ to browse):                                │
-│ ❯ [4] MiniMaxAI/MiniMax-M2                  [huggingface]  (*)             │
-│   [5] moonshotai/Kimi-K2-Instruct           [huggingface]  (*)             │
-│   [6] MiniMax-M2.1                          [huggingface]                  │
-│   … 413 more (↑/↓ to scroll)                                                │
+│ ❯ [4] MiniMax-M2              [huggingface]                       │
+│   [5] MiniMax-M2.1            [huggingface]                       │
+│   [6] MiniMax-M2.5            [huggingface]                       │
+│   [7] MiniMax-M2.7            [huggingface]                       │
+│   [8] MiniMax-M3              [huggingface]                       │
+│   [9] Qwen2.5-Coder-32B-Instruct [huggingface]                    │
+│   [10] Qwen3 235B-A22B        [huggingface]                       │
+│   [11] Qwen3 235B-A22B Instruct 2507 [huggingface]                │
+│   … 411 more (↑/↓ to scroll)                                      │
 ├─────────────────────────────────────────────────────────────────────────────┤
 │ [1-3] Instant Equip Slot     [Ctrl+Shift+1/2/3] Assign Highlighted to Slot │
 │ [↑/↓] Select Standby         [Enter] Equip Selected                        │
