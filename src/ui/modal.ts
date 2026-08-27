@@ -266,6 +266,12 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 						tui.requestRender();
 						return;
 					}
+					if (matchesKey(data, "ctrl+u") || matchesKey(data, "ctrl+backspace")) {
+						query = "";
+						filtered = applyFilter(standby, query);
+						tui.requestRender();
+						return;
+					}
 					if (matchesKey(data, "up")) {
 						selected = Math.max(0, selected - 1);
 						tui.requestRender();
