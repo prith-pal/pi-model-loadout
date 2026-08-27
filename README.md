@@ -19,7 +19,7 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 │      [6] claude-3-7-sonnet               [anthropic]                       │
 │                                                                             │
 ├─────────────────────────────────────────────────────────────────────────────┤
-│  [1-3] Instant Equip Slot    [Ctrl+1/2/3] Assign Highlighted to Slot        │
+│  [1-3] Instant Equip Slot    [Alt+1/2/3] Assign Highlighted to Slot        │
 │  [↑/↓] Select Standby        [Enter] Equip Selected                         │
 │  [Ctrl+F] Toggle Star (*)    [Esc] Cancel / Close                           │
 └─────────────────────────────────────────────────────────────────────────────┘

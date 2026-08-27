@@ -3,7 +3,7 @@
  * ctx.ui.custom(). Pure keyboard-driven: no timers, no background I/O.
  *
  * Two input modes:
- *  - NORMAL: 1/2/3 equip, Ctrl+1/2/3 assign, Ctrl+F star, ↑↓ navigate, Enter equip, Esc close.
+ *  - NORMAL: 1/2/3 equip, Alt+1/2/3 assign, Ctrl+F star, ↑↓ navigate, Enter equip, Esc close.
  *  - SEARCH (Ctrl+S): keystrokes type into a filter box; the standby list
  *    fuzzy-filters live. Esc clears the text and exits search; Esc on empty
  *    text closes the HUD. ↑↓ move within the filtered list.
@@ -209,10 +209,10 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 				? [
 						" [Type] Filter standby list     [Esc] Clear filter / close when empty",
 						" [↑/↓] Move in filtered list   [Enter] Equip highlighted",
-						" [Ctrl+1/2/3] Assign           [Ctrl+F] Toggle Star (*)",
+						" [Alt+1/2/3] Assign           [Ctrl+F] Toggle Star (*)",
 					]
 				: [
-						" [1-3] Instant Equip Slot    [Ctrl+1/2/3] Assign Highlighted to Slot",
+						" [1-3] Instant Equip Slot    [Alt+1/2/3] Assign Highlighted to Slot",
 						" [↑/↓] Select Standby        [Enter] Equip Selected",
 						" [Ctrl+S] Filter             [Ctrl+F] Toggle Star (*)    [Esc] Close",
 					];
@@ -263,7 +263,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 						return;
 					}
 					for (const key of SLOT_KEYS) {
-						if (matchesKey(data, `ctrl+${key}`)) {
+						if (matchesKey(data, `alt+${key}`)) {
 							const row = filtered[selected];
 							if (row) finish({ action: "assign", slot: key, ref: row.ref, query });
 							return;
@@ -276,20 +276,8 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 						}
 						return;
 					}
-				// Legacy terminals (and certain Kitty edge cases) deliver Ctrl+1/2/3
-				// as the raw digit. When a row is highlighted, intercept the digit
-				// as a slot-assign; otherwise treat it as literal text (e.g. the '3'
-				// in "kimi-k3").
-				if (SLOT_KEYS.includes(data as "1" | "2" | "3") && filtered[selected]) {
-					finish({
-						action: "assign",
-						slot: data as "1" | "2" | "3",
-						ref: filtered[selected]!.ref,
-						query,
-					});
-					return;
-				}
-				// Printable character → append to filter
+				// Printable character → append to filter (digits included —
+				// in search mode, '3' narrows the query, it does not assign).
 				if (data.length === 1 && !matchesKey(data, "ctrl+s")) {
 					query += data;
 					refilter();
@@ -322,7 +310,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 				}
 
 				for (const key of SLOT_KEYS) {
-					if (matchesKey(data, `ctrl+${key}`)) {
+					if (matchesKey(data, `alt+${key}`)) {
 						const row = filtered[selected];
 						if (row) finish({ action: "assign", slot: key, ref: row.ref, query });
 						return;
