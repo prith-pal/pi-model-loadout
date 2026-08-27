@@ -3,7 +3,7 @@
  * ctx.ui.custom(). Pure keyboard-driven: no timers, no background I/O.
  *
  * Two input modes:
- *  - NORMAL: 1/2/3 equip, Alt+1/2/3 assign, Ctrl+F star, ↑↓ navigate, Enter equip, Esc close.
+ *  - NORMAL: 1/2/3 equip, Alt+1/2/3 assign, Alt+F star, ↑↓ navigate, Enter equip, Esc close.
  *  - SEARCH (Ctrl+S): keystrokes type into a filter box; the standby list
  *    fuzzy-filters live. Esc clears the text and exits search; Esc on empty
  *    text closes the HUD. ↑↓ move within the filtered list.
@@ -209,12 +209,12 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 				? [
 						" [Type] Filter standby list     [Esc] Clear filter / close when empty",
 						" [↑/↓] Move in filtered list   [Enter] Equip highlighted",
-						" [Alt+1/2/3] Assign           [Ctrl+F] Toggle Star (*)",
+						" [Alt+1/2/3] Assign           [Alt+F] Toggle Star (*)",
 					]
 				: [
 						" [1-3] Instant Equip Slot    [Alt+1/2/3] Assign Highlighted to Slot",
 						" [↑/↓] Select Standby        [Enter] Equip Selected",
-						" [Ctrl+S] Filter             [Ctrl+F] Toggle Star (*)    [Esc] Close",
+						" [Ctrl+S] Filter             [Alt+F] Toggle Star (*)    [Esc] Close",
 					];
 			for (const h of hints) out.push(line(muted(h)));
 			if (toast) {
@@ -269,7 +269,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 							return;
 						}
 					}
-					if (matchesKey(data, "ctrl+f")) {
+					if (matchesKey(data, "alt+f")) {
 						const row = filtered[selected];
 						if (row) {
 							finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref), query });
@@ -298,6 +298,16 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					return;
 				}
 
+				// Alt+1/2/3 must be checked before the bare-digit equip so the
+				// two chords never collide on terminals that blur modifiers.
+				for (const key of SLOT_KEYS) {
+					if (matchesKey(data, `alt+${key}`)) {
+						const row = filtered[selected];
+						if (row) finish({ action: "assign", slot: key, ref: row.ref, query });
+						return;
+					}
+				}
+
 				if (SLOT_KEYS.includes(data as "1" | "2" | "3")) {
 					const ref = config.slots[data as "1" | "2" | "3"];
 					if (ref) {
@@ -309,15 +319,7 @@ export const showLoadoutHud = async (ctx: ExtensionContext, opts: HudOptions): P
 					return;
 				}
 
-				for (const key of SLOT_KEYS) {
-					if (matchesKey(data, `alt+${key}`)) {
-						const row = filtered[selected];
-						if (row) finish({ action: "assign", slot: key, ref: row.ref, query });
-						return;
-					}
-				}
-
-				if (matchesKey(data, "ctrl+f")) {
+				if (matchesKey(data, "alt+f")) {
 					const row = filtered[selected];
 					if (row) {
 						finish({ action: "favorite", ref: row.ref, favorited: !isFavorite(config, row.ref), query });

@@ -21,7 +21,7 @@ A video game–style **Weapon Loadout** (Quick Slots 1 / 2 / 3) and persistent f
 ├─────────────────────────────────────────────────────────────────────────────┤
 │  [1-3] Instant Equip Slot    [Alt+1/2/3] Assign Highlighted to Slot        │
 │  [↑/↓] Select Standby        [Enter] Equip Selected                         │
-│  [Ctrl+F] Toggle Star (*)    [Esc] Cancel / Close                           │
+│  [Alt+F] Toggle Star (*)    [Esc] Cancel / Close                           │
 └─────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -64,9 +64,9 @@ pi -e ./pi-model-loadout-switcher/src/index.ts
 | `1` / `2` / `3` | Instant-equip Quick Slot 1/2/3, persist, and close |
 | `↑` / `↓` | Browse standby favorites & catalog |
 | `Enter` | Equip the highlighted standby model |
-| `Ctrl+1` / `Ctrl+2` / `Ctrl+3` | Assign highlighted model to that slot (auto-stars it) |
+| `Alt+1` / `Alt+2` / `Alt+3` | Assign highlighted model to that slot (auto-stars it) |
 | `Ctrl+S` | Enter search mode — keystrokes fuzzy-filter the standby list live |
-| `Ctrl+F` | Toggle favorite — starred models show a gray `(*)` tag |
+| `Alt+F` | Toggle favorite — starred models show a gray `(*)` tag |
 | `Esc` | (search) clear filter / (normal) close without changing anything |
 
 ### Session restore
